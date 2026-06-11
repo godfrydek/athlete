@@ -3,7 +3,8 @@
   "short_name": "Arc OS",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#080a12",
-  "theme_color": "#080a12",
+  "background_color": "#070A12",
+  "theme_color": "#070A12",
+  "description": "Private all-in-one training, nutrition and life tracker.",
   "icons": []
 }

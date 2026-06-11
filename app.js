@@ -1,189 +1,279 @@
-const STORAGE_KEY = 'trainingArcOS.v1';
-const PIN_KEY = 'trainingArcOS.pinHash';
-const PIN_MODE = 'trainingArcOS.pinMode';
-const $ = s => document.querySelector(s);
-const $$ = s => [...document.querySelectorAll(s)];
-const today = () => new Date().toISOString().slice(0,10);
+/* Training Arc OS v3 - local-first encrypted life + training tracker */
+const APP_KEY = "trainingArcOS.v3.vault";
+const CLOUD_CONFIG_KEY = "trainingArcOS.v3.cloudConfig";
+let state = null;
+let vaultPassword = "";
+let encryptedVaultCache = null;
+let selectedDate = new Date().toISOString().slice(0,10);
+let workoutDraft = [];
+let lastFoodCalc = null;
+let supabaseClient = null;
+let currentView = "dashboard";
 
-let state = loadState();
+const $ = (id) => document.getElementById(id);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+const clamp = (n,min,max) => Math.max(min, Math.min(max, n));
+const round = (n,d=1) => Number.isFinite(n) ? Math.round(n * 10**d) / 10**d : 0;
+const todayIso = () => new Date().toISOString().slice(0,10);
+const fmtDate = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("cs-CZ", {day:"numeric", month:"short", year:"numeric"});
+const toast = (msg) => { const el=$("toast"); el.textContent=msg; el.classList.remove("hidden"); setTimeout(()=>el.classList.add("hidden"), 3300); };
+const num = (v, fallback=0) => { if(v === "" || v === null || v === undefined) return fallback; const n = Number(v); return Number.isFinite(n) ? n : fallback; };
 
-function loadState(){
-  const fallback = {
-    targets:{kcal:2900, protein:175, carbs:360, fat:75},
-    daily:{}, nutrition:[], gym:[], runs:[], settings:{created:new Date().toISOString()}
+const RUN_TYPES = [
+  {name:"Easy / Zone 2", desc:"Lehký běh na objem a recovery. Měl bys být schopný mluvit.", target:"RPE 3–5, nízký stres"},
+  {name:"Tempo", desc:"Středně tvrdý běh kolem prahu. Super na 5–10 km výkon.", target:"RPE 7–8"},
+  {name:"Intervals", desc:"Rychlé úseky s pauzou. Např. 400m/800m/1km repeats.", target:"RPE 8–9"},
+  {name:"900 easy + 100 sprint", desc:"Tvůj nápad: 900 m lehce + 100 m sprint × 5–6. Good pro speed + form.", target:"5–6 km"},
+  {name:"Long run", desc:"Dlouhý běh pro základ. Klidně cyklostezka a kontrola tempa.", target:"RPE 4–6"},
+  {name:"Progression", desc:"Začneš easy a postupně zrychluješ. Skvělý kompromis.", target:"negativní split"},
+  {name:"Recovery jog", desc:"Ultra lehce po těžkém dni. Účel je regenerace, ne ego.", target:"RPE 2–3"},
+  {name:"Hills", desc:"Kopce / sklony. Síla nohou, běžecká technika, power.", target:"krátké úseky"},
+  {name:"Race / Time trial", desc:"Závod nebo test. Trackni podmínky, vítr, povrch, finish.", target:"PR attempt"},
+  {name:"Treadmill incline", desc:"Pás, sklon, kontrola tempa. Dobré v horku nebo zimě.", target:"incline / pace"}
+];
+
+const WORKOUT_TYPES = ["Upper", "Lower", "Fullbody", "Push", "Pull", "Calisthenics", "Recovery", "Race prep"];
+const EXERCISE_PRESETS = [
+  {name:"Strict push-ups", note:"kliky – striktní forma"},
+  {name:"Weighted push-ups +10 kg", note:"lehčí weighted varianta"},
+  {name:"Weighted push-ups +20 kg", note:"tvoje častá těžší varianta"},
+  {name:"Push-up AMRAP", note:"max reps set"},
+  {name:"Explosive push-ups", note:"power / calisthenics"},
+  {name:"Deficit push-ups", note:"větší ROM"},
+  {name:"Explosive pull-ups", note:"muscle-up carryover"},
+  {name:"Explosive dips", note:"power dips"},
+  {name:"Weighted dips +20 kg", note:"síla triceps/hrudník"},
+  {name:"Incline bench press", note:"hlavní hrudník"},
+  {name:"Lat pulldown MAG", note:"lats šířka"},
+  {name:"V-bar row", note:"mid/lower back"},
+  {name:"DB RDL", note:"posterior chain"},
+  {name:"Leg press", note:"safe lower progress"},
+  {name:"Leg extension", note:"quad isolation"},
+  {name:"Leg curl", note:"hamstrings"},
+  {name:"Calf raises", note:"běh + estetika"},
+  {name:"Hyperextensions", note:"záda/glutes"}
+];
+
+function defaultState(){
+  return {
+    version: 3,
+    createdAt: new Date().toISOString(),
+    profile: { name:"Filip", age:17, sex:"male", height:182, weight:80, activity:1.725, calorieTarget:2900, proteinTarget:175, carbsTarget:360, fatTarget:75, weeklyRunTarget:30 },
+    days: {}, foods: seedFoods(), workouts: [], runs: [], journal: [], tasks: [], habits: seedHabits(), books: [], settings: { theme:"dark" }
   };
-  try { return {...fallback, ...(JSON.parse(localStorage.getItem(STORAGE_KEY)) || {})}; }
-  catch { return fallback; }
 }
-function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); render(); }
-function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
-function num(v,d=0){ const n=Number(v); return Number.isFinite(n)?n:d; }
-function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
-function formatDate(d){ return new Date(d+'T12:00:00').toLocaleDateString('cs-CZ',{day:'numeric',month:'short'}); }
-function dateValue(form, name='date'){ return form.elements[name]?.value || today(); }
-function setDefaultDates(){ $$('input[type="date"]').forEach(i=>{ if(!i.value) i.value=today(); }); }
-async function hashPin(pin){
-  const bytes = new TextEncoder().encode('training-arc-os:' + pin);
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
-  return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+function seedFoods(){
+  return [
+    {id:uid(), name:"Kuřecí prsa", kcal100:110, protein100:23, carbs100:0, fat100:2, defaultGrams:200, tags:"protein"},
+    {id:uid(), name:"Skyr", kcal100:62, protein100:11, carbs100:4, fat100:0.2, defaultGrams:150, tags:"protein"},
+    {id:uid(), name:"Rýže vařená", kcal100:130, protein100:2.7, carbs100:28, fat100:0.3, defaultGrams:250, tags:"carbs"},
+    {id:uid(), name:"Ovesné vločky", kcal100:370, protein100:13, carbs100:60, fat100:7, defaultGrams:80, tags:"carbs"},
+    {id:uid(), name:"Banán", kcal100:89, protein100:1.1, carbs100:23, fat100:0.3, defaultGrams:120, tags:"carbs"},
+    {id:uid(), name:"Vejce", kcal100:143, protein100:13, carbs100:1.1, fat100:10, defaultGrams:60, tags:"fat protein"}
+  ];
 }
-
-async function initLock(){
-  $('#todayText').textContent = new Date().toLocaleDateString('cs-CZ',{weekday:'long',day:'numeric',month:'long'});
-  const mode = localStorage.getItem(PIN_MODE);
-  const pinHash = localStorage.getItem(PIN_KEY);
-  if(mode === 'off') return showApp();
-  $('#lockScreen').classList.remove('hidden');
-  if(pinHash){ $('#pinLogin').classList.remove('hidden'); $('#pinInput').focus(); }
-  else { $('#pinSetup').classList.remove('hidden'); $('#newPin').focus(); }
+function seedHabits(){
+  return [
+    {id:uid(), name:"Supplements", history:{}}, {id:uid(), name:"Mobility / foam roller", history:{}}, {id:uid(), name:"Reading", history:{}}, {id:uid(), name:"Skincare", history:{}}
+  ];
 }
-function showApp(){ $('#lockScreen').classList.add('hidden'); $('#app').classList.remove('hidden'); setDefaultDates(); render(); }
-
-$('#createPinBtn').addEventListener('click', async()=>{
-  const pin=$('#newPin').value.trim();
-  if(pin.length<4) return $('#lockMsg').textContent='PIN dej aspoň 4 znaky.';
-  localStorage.setItem(PIN_KEY, await hashPin(pin)); localStorage.setItem(PIN_MODE,'on'); showApp(); toast('PIN nastaven.');
-});
-$('#skipPinBtn').addEventListener('click',()=>{ localStorage.setItem(PIN_MODE,'off'); showApp(); });
-$('#unlockBtn').addEventListener('click', async()=>{
-  const ok = await hashPin($('#pinInput').value.trim()) === localStorage.getItem(PIN_KEY);
-  if(ok) showApp(); else $('#lockMsg').textContent='Špatný PIN bro.';
-});
-$('#pinInput').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#unlockBtn').click(); });
-$('#resetBtn').addEventListener('click',()=>{ if(confirm('Reset smaže PIN i data v appce. Fakt?')){ localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(PIN_KEY); localStorage.removeItem(PIN_MODE); location.reload(); } });
-$('#lockBtn').addEventListener('click',()=>{ if(localStorage.getItem(PIN_MODE)==='off') toast('Secure režim je vypnutý.'); else location.reload(); });
-
-$$('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>{
-  $$('.nav-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
-  $$('.view').forEach(v=>v.classList.remove('active-view'));
-  $('#'+btn.dataset.view).classList.add('active-view');
-  $('#pageTitle').textContent = btn.textContent;
-  if(btn.dataset.view==='stats') setTimeout(drawCharts,50);
-}));
-
-$('#quickForm').addEventListener('submit', e=>{
-  e.preventDefault(); const f=e.target; const d=today(); state.daily[d] = {...(state.daily[d]||{}),
-    weight: num(f.weight.value, state.daily[d]?.weight || 0) || undefined,
-    kcal: num(f.kcal.value, state.daily[d]?.kcal || 0), protein: num(f.protein.value, state.daily[d]?.protein || 0),
-    steps: num(f.steps.value, state.daily[d]?.steps || 0)};
-  f.reset(); save(); toast('Dnešek uložen.');
-});
-$('#nutritionForm').addEventListener('submit', e=>{
-  e.preventDefault(); const f=e.target; const item={id:crypto.randomUUID(),date:dateValue(f),kcal:num(f.kcal.value),protein:num(f.protein.value),carbs:num(f.carbs.value),fat:num(f.fat.value),fiber:num(f.fiber.value),water:num(f.water.value),note:f.note.value.trim()};
-  state.nutrition.push(item); state.daily[item.date] = {...(state.daily[item.date]||{}), kcal:item.kcal, protein:item.protein, carbs:item.carbs, fat:item.fat};
-  f.reset(); setDefaultDates(); save(); toast('Kalorie uložené.');
-});
-$('#targetsForm').addEventListener('submit', e=>{
-  e.preventDefault(); const f=e.target; ['kcal','protein','carbs','fat'].forEach(k=>{ if(f[k].value) state.targets[k]=num(f[k].value,state.targets[k]); });
-  save(); toast('Cíle aktualizované.');
-});
-$('#gymForm').addEventListener('submit', e=>{
-  e.preventDefault(); const f=e.target; const item={id:crypto.randomUUID(),date:dateValue(f),workout:f.workout.value.trim()||'Workout',exercise:f.exercise.value.trim()||'Cvik',sets:num(f.sets.value,1),reps:f.reps.value.trim()||'0',weight:num(f.weight.value),rir:f.rir.value===''?null:num(f.rir.value),note:f.note.value.trim()};
-  state.gym.push(item); f.reset(); setDefaultDates(); save(); toast('Cvik přidán.');
-});
-$('#runForm').addEventListener('submit', e=>{
-  e.preventDefault(); const f=e.target; const item={id:crypto.randomUUID(),date:dateValue(f),type:f.type.value.trim()||'Run',distance:num(f.distance.value),time:f.time.value.trim(),seconds:parseTime(f.time.value.trim()),hr:num(f.hr.value),rpe:num(f.rpe.value),elevation:num(f.elevation.value),note:f.note.value.trim()};
-  state.runs.push(item); f.reset(); setDefaultDates(); save(); toast('Běh přidán.');
-});
-$('#targetsForm').addEventListener('reset',()=>render());
-$('#exportBtn').addEventListener('click', exportData); $('#quickExport').addEventListener('click', exportData);
-$('#importInput').addEventListener('change', importData);
-$('#clearBtn').addEventListener('click',()=>{ if(confirm('Smazat nutrition/gym/run/daily logy?')){ state.daily={}; state.nutrition=[]; state.gym=[]; state.runs=[]; save(); toast('Zápisy smazané.'); }});
-$('#pinChangeForm').addEventListener('submit', async e=>{ e.preventDefault(); const pin=e.target.pin.value.trim(); if(pin.length<4) return toast('PIN min. 4 znaky.'); localStorage.setItem(PIN_KEY, await hashPin(pin)); localStorage.setItem(PIN_MODE,'on'); e.target.reset(); toast('PIN změněn.'); });
-$('#demoBtn').addEventListener('click', addDemoData);
-
-function parseTime(t){
-  if(!t) return 0; const p=t.split(':').map(Number); if(p.some(n=>!Number.isFinite(n))) return 0;
-  if(p.length===2) return p[0]*60+p[1]; if(p.length===3) return p[0]*3600+p[1]*60+p[2]; return p[0];
-}
-function pace(run){ if(!run.distance||!run.seconds) return '—'; const sec=run.seconds/run.distance; return `${Math.floor(sec/60)}:${String(Math.round(sec%60)).padStart(2,'0')}/km`; }
-function volume(g){ const reps = String(g.reps).split(',').map(x=>num(x.trim())).reduce((a,b)=>a+b,0) || num(g.reps); return Math.round(num(g.weight)*reps); }
-function weekStart(date=new Date()){ const d=new Date(date); const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); d.setHours(0,0,0,0); return d; }
-function inThisWeek(dateStr){ return new Date(dateStr+'T12:00:00') >= weekStart(); }
-function lastDays(n){ return [...Array(n)].map((_,i)=>{ const d=new Date(); d.setDate(d.getDate()-(n-1-i)); return d.toISOString().slice(0,10); }); }
-
-function render(){
-  const d=today(), day=state.daily[d]||{}, target=state.targets;
-  $('#dashKcal').textContent=`${Math.round(day.kcal||0)} / ${target.kcal}`;
-  $('#dashKcalNote').textContent=`${Math.round(target.kcal-(day.kcal||0))} kcal zbývá`;
-  $('#dashProtein').textContent=`${Math.round(day.protein||0)} / ${target.protein} g`;
-  const latestWeight = latestDaily('weight'); $('#dashWeight').textContent= latestWeight ? `${latestWeight.value} kg` : '— kg';
-  $('#weightTrend').textContent = weightTrendText();
-  const weekKm = state.runs.filter(r=>inThisWeek(r.date)).reduce((a,r)=>a+num(r.distance),0);
-  $('#dashKm').textContent=`${weekKm.toFixed(1)} km`; $('#runTrend').textContent = weekKm>=30?'solidní objem': weekKm>=15?'rozjíždí se':'čeká na kilometry';
-  const kcalPct=clamp(((day.kcal||0)/target.kcal)*100,0,120), proteinPct=clamp(((day.protein||0)/target.protein)*100,0,120);
-  $('#kcalRing').textContent=`${Math.round(kcalPct)}%`; $('#proteinRing').textContent=`${Math.round(proteinPct)}%`; $('#trainingRing').textContent=String(state.gym.filter(g=>g.date===d).length + state.runs.filter(r=>r.date===d).length);
-  $$('.ring')[0].style.setProperty('--deg', `${Math.min(kcalPct,100)*3.6}deg`); $$('.ring')[1].style.setProperty('--deg', `${Math.min(proteinPct,100)*3.6}deg`); $$('.ring')[2].style.setProperty('--deg', `${Math.min(100,(state.gym.filter(g=>g.date===d).length + state.runs.filter(r=>r.date===d).length)*50)*3.6}deg`);
-  const score = dailyScore(day); $('#dailyScore').textContent=score; $('#coachSummary').textContent=score>=80?'Dneska to vypadá jako GOAT režim.':'Zapiš víc dat nebo dotáhni kcal/protein/trénink.';
-  renderTips(); renderLogs(); fillTargets(); drawCharts();
-}
-function dailyScore(day){ let s=0; if(day.kcal) s+=25; if(day.protein>=state.targets.protein*.9) s+=25; if(day.weight) s+=15; if(day.steps>=8000) s+=15; if(state.gym.some(g=>g.date===today())||state.runs.some(r=>r.date===today())) s+=20; return clamp(s,0,100); }
-function latestDaily(key){ return Object.entries(state.daily).filter(([_,v])=>v[key]).sort(([a],[b])=>b.localeCompare(a)).map(([date,v])=>({date,value:v[key]}))[0]; }
-function weightTrendText(){ const vals=Object.entries(state.daily).filter(([_,v])=>v.weight).sort(([a],[b])=>a.localeCompare(b)).slice(-7); if(vals.length<2) return 'trend čeká'; const diff=vals.at(-1)[1].weight-vals[0][1].weight; return `${diff>=0?'+':''}${diff.toFixed(1)} kg / poslední zápisy`; }
-function renderTips(){
-  const d=state.daily[today()]||{}, tips=[];
-  if(!d.kcal) tips.push('Hoď dnešní kalorie, jinak AI coach hádá naslepo.');
-  else if(d.kcal < state.targets.kcal-400) tips.push('Jsi dost pod cílem. Pro výkon v gymu/běhu radši nenechávej moc velkou díru.');
-  else if(d.kcal > state.targets.kcal+350) tips.push('Kalorie jsou nad cílem. Není problém, jen sleduj 7denní trend váhy.');
-  else tips.push('Kalorie jsou v dobrém pásmu. Sleduj výkon a ranní váhu.');
-  if((d.protein||0)<state.targets.protein*.85) tips.push('Protein dnes zaostává. Dej ještě tvaroh, maso, vejce, whey nebo skyr.');
-  if(state.runs.filter(r=>inThisWeek(r.date)).reduce((a,r)=>a+r.distance,0)>35) tips.push('Běžecký objem už je solidní. Easy dny fakt drž easy, ať nepřetížíš nohy.');
-  const hardDays=[...state.runs.filter(r=>r.rpe>=8),...state.gym.filter(g=>g.rir!==null&&g.rir<=1)].filter(x=>lastDays(3).includes(x.date)).length;
-  if(hardDays>=3) tips.push('Poslední 3 dny je dost tvrdých zápisů. Zvaž lehčí den nebo víc spánku.');
-  if(!state.gym.length && !state.runs.length) tips.push('Začni klidně jen 3 zápisy: váha, kalorie, jeden workout. Pak už grafy ožijí.');
-  $('#tipsList').innerHTML=tips.map(t=>`<li>${t}</li>`).join('');
-}
-function fillTargets(){ const f=$('#targetsForm'); if(!f) return; ['kcal','protein','carbs','fat'].forEach(k=>f[k].placeholder=`${k}: ${state.targets[k]}`); }
-function renderLogs(){
-  $('#nutritionLog').innerHTML = state.nutrition.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30).map(x=>logItem(x.id,`${formatDate(x.date)} · ${x.kcal} kcal`,`${x.protein}g P · ${x.carbs}g C · ${x.fat}g F`,x.note,'nutrition')).join('') || '<p class="muted">Zatím žádné zápisy.</p>';
-  $('#gymLog').innerHTML = state.gym.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,50).map(x=>logItem(x.id,`${formatDate(x.date)} · ${x.exercise}`,`${x.workout} · ${x.sets}× ${x.reps} · ${x.weight} kg · RIR ${x.rir ?? '—'}`,x.note,'gym')).join('') || '<p class="muted">Zatím žádné cviky.</p>';
-  $('#runLog').innerHTML = state.runs.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,50).map(x=>logItem(x.id,`${formatDate(x.date)} · ${x.type}`,`${x.distance} km · ${x.time || '—'} · ${pace(x)} · HR ${x.hr||'—'}`,x.note,'runs')).join('') || '<p class="muted">Zatím žádné běhy.</p>';
-  $('#progressionTip').textContent = progressionTip(); $('#prBoard').innerHTML = prBoard();
-  $$('.delete-log').forEach(b=>b.addEventListener('click',()=>deleteLog(b.dataset.type,b.dataset.id)));
-}
-function logItem(id,title,meta,note,type){ return `<div class="log-item"><div><strong>${escapeHtml(title)}</strong><span>${escapeHtml(meta)}</span>${note?`<small><br>${escapeHtml(note)}</small>`:''}</div><button class="delete-log" data-type="${type}" data-id="${id}">Smazat</button></div>`; }
-function deleteLog(type,id){ state[type]=state[type].filter(x=>x.id!==id); save(); toast('Zápis smazán.'); }
-function escapeHtml(s){ return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
-function progressionTip(){
-  if(!state.gym.length) return 'Přidej první cviky a ukážu progres.';
-  const last=state.gym.at(-1); const same=state.gym.filter(g=>g.exercise.toLowerCase()===last.exercise.toLowerCase()).slice(-3);
-  if(same.length<2) return `U ${last.exercise} máš první zápis. Příště drž techniku a nech 1–2 RIR.`;
-  const prev=same.at(-2); const lastVol=volume(last), prevVol=volume(prev);
-  if(lastVol>prevVol) return `${last.exercise}: volume šlo nahoru (${prevVol} → ${lastVol}). Příště můžeš zkusit +1 rep nebo +2.5 kg.`;
-  return `${last.exercise}: podobný/nižší volume než minule. Zkus nejdřív přidat reps, až potom váhu.`;
-}
-function prBoard(){
-  const prs=[1,5,10].map(dist=>{
-    const candidates=state.runs.filter(r=>r.distance>=dist&&r.seconds).map(r=>({dist,time:r.seconds*(dist/r.distance),date:r.date})).sort((a,b)=>a.time-b.time);
-    const best=candidates[0]; return `<div class="pr"><span>${dist} km odhad</span><strong>${best?secToTime(best.time):'—'}</strong></div>`;
-  }).join('');
-  const longest=state.runs.slice().sort((a,b)=>b.distance-a.distance)[0];
-  return prs + `<div class="pr"><span>Longest run</span><strong>${longest?longest.distance.toFixed(1)+' km':'—'}</strong></div>`;
-}
-function secToTime(sec){ sec=Math.round(sec); const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60; return h?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${m}:${String(s).padStart(2,'0')}`; }
-function aggregateDaily(key, days=14){ return lastDays(days).map(d=>({date:d, value:num(state.daily[d]?.[key]) || state.nutrition.filter(n=>n.date===d).reduce((a,n)=>a+num(n[key]),0)})); }
-function aggregateRuns(days=14){ return lastDays(days).map(d=>({date:d,value:state.runs.filter(r=>r.date===d).reduce((a,r)=>a+num(r.distance),0)})); }
-function aggregateGym(days=14){ return lastDays(days).map(d=>({date:d,value:state.gym.filter(g=>g.date===d).reduce((a,g)=>a+volume(g),0)})); }
-function drawCharts(){ drawLine('weightChart', lastDays(21).map(d=>({date:d,value:num(state.daily[d]?.weight)||null})).filter(x=>x.value), 'kg'); drawLine('kcalChart', aggregateDaily('kcal',14), 'kcal'); drawLine('runChart', aggregateRuns(14), 'km'); drawLine('gymChart', aggregateGym(14), 'vol'); }
-function drawLine(id,data,label){
-  const c=$('#'+id); if(!c) return; const ctx=c.getContext('2d'), w=c.width=c.clientWidth*devicePixelRatio, h=c.height=220*devicePixelRatio; ctx.clearRect(0,0,w,h); ctx.scale(devicePixelRatio,devicePixelRatio);
-  const W=c.clientWidth,H=220,p=26; ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=1; for(let i=0;i<4;i++){ const y=p+i*(H-p*2)/3; ctx.beginPath(); ctx.moveTo(p,y); ctx.lineTo(W-p,y); ctx.stroke(); }
-  if(!data.length){ ctx.fillStyle='rgba(255,255,255,.45)'; ctx.font='14px system-ui'; ctx.fillText('Čekám na data',p,H/2); return; }
-  const vals=data.map(d=>d.value).filter(v=>v!==null), min=Math.min(...vals,0), max=Math.max(...vals,1), range=max-min||1;
-  const pts=data.map((d,i)=>({x:p+(data.length===1?.5:i/(data.length-1))*(W-p*2), y:H-p-((d.value-min)/range)*(H-p*2),...d}));
-  const grad=ctx.createLinearGradient(0,0,W,0); grad.addColorStop(0,'#7c5cff'); grad.addColorStop(1,'#00e5a8'); ctx.strokeStyle=grad; ctx.lineWidth=3; ctx.beginPath(); pts.forEach((pt,i)=> i?ctx.lineTo(pt.x,pt.y):ctx.moveTo(pt.x,pt.y)); ctx.stroke();
-  pts.forEach(pt=>{ ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(pt.x,pt.y,3,0,Math.PI*2); ctx.fill(); });
-  ctx.fillStyle='rgba(255,255,255,.65)'; ctx.font='12px system-ui'; ctx.fillText(`${Math.round(max)} ${label}`,p,16); ctx.fillText(formatDate(data.at(-1).date),W-p-62,H-6);
-}
-function exportData(){ const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`training-arc-os-${today()}.json`; a.click(); URL.revokeObjectURL(a.href); }
-function importData(e){ const file=e.target.files[0]; if(!file) return; const r=new FileReader(); r.onload=()=>{ try{ state=JSON.parse(r.result); save(); toast('Import hotový.'); }catch{ toast('Import failnul.'); } }; r.readAsText(file); }
-function addDemoData(){
-  if(!confirm('Přidat pár demo zápisů?')) return;
-  lastDays(9).forEach((d,i)=>{ state.daily[d]={weight:80.5-i*.12+(i%2*.2),kcal:2700+i*42,protein:155+i*3,steps:7500+i*800}; });
-  state.runs.push({id:crypto.randomUUID(),date:lastDays(6)[0],type:'Easy',distance:5.1,time:'29:40',seconds:1780,hr:145,rpe:4,elevation:20,note:'demo'}, {id:crypto.randomUUID(),date:lastDays(3)[0],type:'Tempo',distance:6.0,time:'27:50',seconds:1670,hr:171,rpe:8,elevation:32,note:'demo'});
-  state.gym.push({id:crypto.randomUUID(),date:lastDays(4)[0],workout:'Upper',exercise:'Incline bench',sets:3,reps:'8,7,6',weight:75,rir:1,note:'demo'}, {id:crypto.randomUUID(),date:lastDays(1)[0],workout:'Upper',exercise:'Incline bench',sets:3,reps:'8,8,6',weight:75,rir:1,note:'demo'});
-  save(); toast('Demo data přidána.');
+function demoState(){
+  const s = defaultState();
+  const daysAgo = (d) => { const x = new Date(); x.setDate(x.getDate()-d); return x.toISOString().slice(0,10); };
+  [6,5,4,3,2,1,0].forEach((d,i)=>{ const iso=daysAgo(d); s.days[iso]={ weight: round(80.6-i*0.12,1), kcal: 2700+i*40, protein:160+i*3, carbs:320+i*7, fat:70, steps:9000+i*900, sleep:6.8+i*.1, mood:7+(i%3), energy:7, notes:"Demo log", foodLogs:[] }; });
+  s.runs.push({id:uid(), date:daysAgo(5), type:"Easy / Zone 2", distance:4.1, seconds:1318, hr:145, rpe:5, terrain:"Silnice/cyklostezka", notes:"Demo easy"});
+  s.runs.push({id:uid(), date:daysAgo(2), type:"Race / Time trial", distance:5.1, seconds:1507, hr:168, rpe:8, terrain:"Silnice/cyklostezka", notes:"Demo strong finish"});
+  s.workouts.push({id:uid(), date:daysAgo(4), type:"Upper", notes:"Demo", exercises:[{name:"Incline bench press", sets:[{kg:78,reps:7,rir:1},{kg:75,reps:8,rir:2}]},{name:"Weighted push-ups +20 kg", sets:[{kg:20,reps:12,rir:2}]}]});
+  s.workouts.push({id:uid(), date:daysAgo(1), type:"Calisthenics", notes:"Demo", exercises:[{name:"Explosive pull-ups", sets:[{kg:0,reps:8,rir:1}]},{name:"Explosive dips", sets:[{kg:0,reps:12,rir:1}]}]});
+  return s;
 }
 
-if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{})); }
-initLock();
+function ensureDay(iso=selectedDate){
+  if(!state.days[iso]) state.days[iso] = { weight:"", kcal:0, protein:0, carbs:0, fat:0, steps:0, sleep:"", mood:"", energy:"", notes:"", foodLogs:[] };
+  if(!state.days[iso].foodLogs) state.days[iso].foodLogs = [];
+  return state.days[iso];
+}
+
+// Crypto helpers
+const enc = new TextEncoder(); const dec = new TextDecoder();
+function b64(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+function fromB64(str){ return Uint8Array.from(atob(str), c=>c.charCodeAt(0)); }
+async function deriveKey(password, salt){
+  const base = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2", salt, iterations:220000, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, false, ["encrypt","decrypt"]);
+}
+async function encryptState(payload, password){
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(password, salt);
+  const data = await crypto.subtle.encrypt({name:"AES-GCM", iv}, key, enc.encode(JSON.stringify(payload)));
+  return { app:"TrainingArcOS", version:3, kdf:"PBKDF2-SHA256-220k", cipher:"AES-GCM", salt:b64(salt), iv:b64(iv), data:b64(data), updatedAt:new Date().toISOString() };
+}
+async function decryptVault(vault, password){
+  const key = await deriveKey(password, fromB64(vault.salt));
+  const plain = await crypto.subtle.decrypt({name:"AES-GCM", iv:fromB64(vault.iv)}, key, fromB64(vault.data));
+  return JSON.parse(dec.decode(plain));
+}
+async function saveVault(show=true){
+  if(!state || !vaultPassword) return;
+  encryptedVaultCache = await encryptState(state, vaultPassword);
+  localStorage.setItem(APP_KEY, JSON.stringify(encryptedVaultCache));
+  if(show) toast("Vault uložený a zašifrovaný.");
+  renderAll();
+}
+
+async function init(){
+  selectedDate = todayIso();
+  $("datePicker").value = selectedDate;
+  $("todayLabel").textContent = new Date().toLocaleDateString("cs-CZ", {weekday:"long", day:"numeric", month:"long", year:"numeric"});
+  encryptedVaultCache = JSON.parse(localStorage.getItem(APP_KEY) || "null");
+  $("vaultStatus").textContent = encryptedVaultCache ? "Vault nalezen – zadej PIN/heslo" : "Nový vault – nastav PIN/heslo";
+  bindEvents();
+  initCloudConfigFields();
+}
+function openApp(){
+  $("lockScreen").classList.add("hidden"); $("appShell").classList.remove("hidden");
+  applyTheme(); hydrateStaticControls(); renderAll();
+}
+function applyTheme(){ document.body.classList.toggle("light", state?.settings?.theme === "light"); }
+function hydrateStaticControls(){
+  $("workoutType").innerHTML = WORKOUT_TYPES.map(x=>`<option>${x}</option>`).join("");
+  $("runType").innerHTML = RUN_TYPES.map(x=>`<option>${x.name}</option>`).join("");
+  renderExercisePresets(); renderRunTypeCards();
+}
+
+function bindEvents(){
+  $("unlockBtn").onclick = async()=>{ const pass=$("vaultPassword").value; if(!pass || pass.length<4) return toast("Zadej aspoň 4 znaky."); try{ encryptedVaultCache = JSON.parse(localStorage.getItem(APP_KEY)||"null"); if(!encryptedVaultCache) return toast("Vault zatím neexistuje. Klikni na Vytvořit nový vault."); state = await decryptVault(encryptedVaultCache, pass); vaultPassword=pass; openApp(); toast("Odemčeno."); } catch(e){ toast("Špatný PIN/heslo nebo poškozený vault."); }};
+  $("createVaultBtn").onclick = async()=>{ const pass=$("vaultPassword").value; if(!pass || pass.length<4) return toast("Nastav PIN/heslo aspoň 4 znaky."); if(localStorage.getItem(APP_KEY) && !confirm("Přepsat existující lokální vault?")) return; state=defaultState(); vaultPassword=pass; await saveVault(false); openApp(); toast("Nový secure vault vytvořen."); };
+  $("demoVaultBtn").onclick = async()=>{ const pass=$("vaultPassword").value || "demo1234"; state=demoState(); vaultPassword=pass; await saveVault(false); openApp(); toast("Demo vault vytvořený. Heslo je to, co jsi zadal; pokud nic, demo1234."); };
+  $("resetVaultBtn").onclick = ()=>{ if(confirm("Smazat lokální vault? Nejde vrátit zpět.")){ localStorage.removeItem(APP_KEY); location.reload(); }};
+  $("quickSaveBtn").onclick = ()=>saveVault(); $("lockBtn").onclick=()=>location.reload();
+  $("themeToggle").onclick=()=>{ state.settings.theme = state.settings.theme === "light" ? "dark" : "light"; applyTheme(); saveVault(false); };
+  $("datePicker").onchange=(e)=>{ selectedDate=e.target.value || todayIso(); renderAll(); };
+  $$(".nav-btn").forEach(btn=>btn.onclick=()=>switchView(btn.dataset.view));
+  $("saveDayBtn").onclick = saveQuickDay;
+  $("calcFoodBtn").onclick = calculateFood; $("saveFoodBtn").onclick=saveCustomFood; $("addFoodToDayBtn").onclick=addCalculatedFoodToDay; $("foodSearch").oninput=renderFoods; $("clearFoodSearch").onclick=()=>{$("foodSearch").value=""; renderFoods();};
+  ["foodGrams","foodKcal100","foodProtein100","foodCarbs100","foodFat100"].forEach(id=>$(id).oninput=calculateFood);
+  $("saveTargetsBtn").onclick=saveTargets;
+  $("addSetBtn").onclick=addSetToDraft; $("saveWorkoutBtn").onclick=saveWorkout; $("clearWorkoutDraftBtn").onclick=()=>{workoutDraft=[]; renderWorkoutDraft();};
+  $("saveRunBtn").onclick=saveRun;
+  $("calc1rmBtn").onclick=calc1rm; $("calcVo2Btn").onclick=calcVo2; $("calcTdeeBtn").onclick=calcTdee; $("calcPaceBtn").onclick=calcPace; $("calcPredBtn").onclick=calcPrediction; $("calcMacroBtn").onclick=calcMacros;
+  $("saveJournalBtn").onclick=saveJournal; $("addTaskBtn").onclick=addTask; $("saveBookBtn").onclick=saveBook; $("addHabitBtn").onclick=addHabit;
+  $("exportBtn").onclick=exportBackup; $("importInput").onchange=importBackup; $("changePasswordBtn").onclick=changePassword;
+  $("saveCloudConfigBtn").onclick=saveCloudConfig; $("cloudSignupBtn").onclick=cloudSignup; $("cloudSigninBtn").onclick=cloudSignin; $("cloudPushBtn").onclick=cloudPush; $("cloudPullBtn").onclick=cloudPull; $("cloudSignoutBtn").onclick=cloudSignout;
+}
+function switchView(view){ currentView=view; $$(".nav-btn").forEach(b=>b.classList.toggle("active", b.dataset.view===view)); $$(".view").forEach(v=>v.classList.toggle("active", v.id===view)); const titleMap={dashboard:"Dashboard", nutrition:"Kalorie & food database", gym:"Gym workouts", running:"Running arc", calculators:"Kalkulačky", life:"Life OS", analytics:"Grafy & staty", settings:"Sync & secure"}; $("viewTitle").textContent=titleMap[view]||view; if(view==="analytics") setTimeout(renderCharts,30); }
+
+function renderAll(){
+  if(!state) return; ensureDay(); renderDashboard(); renderDayInputs(); renderFoods(); renderFoodLog(); renderTargets(); renderWorkoutDraft(); renderWorkoutHistory(); renderGymInsights(); renderRunHistory(); renderRunInsights(); renderJournal(); renderTasks(); renderBooks(); renderHabits(); renderPrBoard(); if(currentView==="analytics") renderCharts();
+}
+function dayTotals(iso=selectedDate){
+  const d=ensureDay(iso); const food = (d.foodLogs||[]).reduce((a,f)=>({kcal:a.kcal+num(f.kcal), protein:a.protein+num(f.protein), carbs:a.carbs+num(f.carbs), fat:a.fat+num(f.fat)}), {kcal:0,protein:0,carbs:0,fat:0});
+  return { kcal:num(d.kcal)+food.kcal, protein:num(d.protein)+food.protein, carbs:num(d.carbs)+food.carbs, fat:num(d.fat)+food.fat, food };
+}
+function renderDayInputs(){ const d=ensureDay(); $("quickWeight").value=d.weight||""; $("quickKcal").value=d.kcal||""; $("quickProtein").value=d.protein||""; $("quickSteps").value=d.steps||""; $("quickSleep").value=d.sleep||""; $("quickMood").value=d.mood||""; $("quickNote").value=d.notes||""; }
+function saveQuickDay(){ const d=ensureDay(); d.weight=num($("quickWeight").value,""); d.kcal=num($("quickKcal").value,0); d.protein=num($("quickProtein").value,0); d.steps=num($("quickSteps").value,0); d.sleep=num($("quickSleep").value,""); d.mood=num($("quickMood").value,""); d.notes=$("quickNote").value.trim(); saveVault(); }
+function renderDashboard(){
+  const d=ensureDay(); const totals=dayTotals(); const p=state.profile; const kcalScore = p.calorieTarget ? 100 - Math.min(100, Math.abs(totals.kcal-p.calorieTarget)/p.calorieTarget*130) : 0; const proteinScore = p.proteinTarget ? Math.min(100, totals.protein/p.proteinTarget*100) : 0; const stepsScore = Math.min(100, num(d.steps)/10000*100); const sleepScore = Math.min(100, num(d.sleep)/8*100); const moodScore = num(d.mood)*10; const workoutToday = state.workouts.some(w=>w.date===selectedDate) ? 100 : 0; const runToday = state.runs.some(r=>r.date===selectedDate) ? 100 : 0; const score = Math.round((kcalScore*.18)+(proteinScore*.22)+(stepsScore*.15)+(sleepScore*.15)+(moodScore*.12)+(Math.max(workoutToday,runToday)*.18));
+  $("arcScore").textContent=score; $("scoreRingText").textContent=score+"%"; drawRing($("scoreRing"), score);
+  $("dashKcal").textContent=Math.round(totals.kcal); $("dashProtein").textContent=Math.round(totals.protein)+" g"; $("dashKcalTarget").textContent="cíl "+p.calorieTarget; $("dashProteinTarget").textContent="cíl "+p.proteinTarget+" g"; $("dashWeight").textContent=d.weight?d.weight+" kg":"—"; $("dashAvgWeight").textContent=avgWeight(7)||"—";
+  $("dashLoad").textContent=Math.round(getWeekGymVolume(new Date(selectedDate)) / 1000)+"k / "+round(getWeekRunKm(new Date(selectedDate)),1)+" km";
+  const tips = getCoachTips(); $("coachOneLiner").textContent=tips[0] || "Zapiš dnešní data a coach ti dá tip."; $("coachTips").innerHTML=tips.map(t=>`<div class="item"><strong>${t}</strong></div>`).join("");
+}
+function avgWeight(days){ const arr = Object.entries(state.days).sort(([a],[b])=>a.localeCompare(b)).slice(-days).map(([_,d])=>num(d.weight,NaN)).filter(Number.isFinite); if(!arr.length) return null; return round(arr.reduce((a,b)=>a+b,0)/arr.length,1)+" kg"; }
+function getCoachTips(){
+  const d=ensureDay(); const totals=dayTotals(); const p=state.profile; const tips=[];
+  if(totals.protein < p.proteinTarget*.85) tips.push(`Protein je nízko: ${Math.round(totals.protein)} g / ${p.proteinTarget} g. Dej skyr/kuře/protein a zachraň recovery.`);
+  if(totals.kcal && Math.abs(totals.kcal-p.calorieTarget)>350) tips.push(`Kcal jsou mimo cíl o ${Math.round(totals.kcal-p.calorieTarget)} kcal. Dnes drž plán podle cíle, ne podle náhody.`);
+  if(num(d.sleep) && num(d.sleep)<7) tips.push("Spánek pod 7 h → dnes nejezdi ego max, spíš technika/RIR a easy běh.");
+  const weekKm=getWeekRunKm(new Date(selectedDate)); if(weekKm>p.weeklyRunTarget*1.15) tips.push(`Běžecký objem už je ${round(weekKm,1)} km. Další běh drž easy, ať se nezrakvíš.`);
+  const lastRun=[...state.runs].sort((a,b)=>b.date.localeCompare(a.date))[0]; if(lastRun && lastRun.rpe>=8) tips.push("Poslední běh byl tvrdý. Další den dej easy/recovery nebo upper bez nohou.");
+  if(!state.runs.some(r=>r.date===selectedDate) && !state.workouts.some(w=>w.date===selectedDate)) tips.push("Dnes zatím žádný training log. Aspoň 20–30 min easy nebo rychlý upper/cali udrží streak.");
+  if(!tips.length) tips.push("Dnes to vypadá clean. Drž protein, hydrataci a zapiš večer mood/sleep.");
+  return tips.slice(0,5);
+}
+
+function calculateFood(){
+  const grams=num($("foodGrams").value); const factor=grams/100; const kcal=num($("foodKcal100").value)*factor; const protein=num($("foodProtein100").value)*factor; const carbs=num($("foodCarbs100").value)*factor; const fat=num($("foodFat100").value)*factor;
+  lastFoodCalc={ id:uid(), name:$("foodName").value.trim()||"Custom food", grams, kcal:round(kcal,0), protein:round(protein,1), carbs:round(carbs,1), fat:round(fat,1), kcal100:num($("foodKcal100").value), protein100:num($("foodProtein100").value), carbs100:num($("foodCarbs100").value), fat100:num($("foodFat100").value) };
+  $("foodCalcResult").innerHTML = `<b>${lastFoodCalc.name}</b> (${grams||0} g): <b>${lastFoodCalc.kcal} kcal</b>, P ${lastFoodCalc.protein} g / C ${lastFoodCalc.carbs} g / F ${lastFoodCalc.fat} g`;
+  return lastFoodCalc;
+}
+function saveCustomFood(){ const f=calculateFood(); if(!f.name || !f.kcal100) return toast("Zadej aspoň název a kcal/100g."); state.foods.unshift({id:uid(), name:f.name, kcal100:f.kcal100, protein100:f.protein100, carbs100:f.carbs100, fat100:f.fat100, defaultGrams:f.grams||100, tags:"custom"}); saveVault(); toast("Custom jídlo uloženo."); }
+function addCalculatedFoodToDay(){ const f=calculateFood(); if(!f.grams || !f.kcal) return toast("Zadej gramáž a kcal."); ensureDay().foodLogs.push(f); saveVault(); }
+function quickAddFood(food){ const grams = Number(prompt(`Gramáž pro ${food.name}:`, food.defaultGrams||100)); if(!grams) return; const factor=grams/100; ensureDay().foodLogs.push({id:uid(), name:food.name, grams, kcal:round(food.kcal100*factor,0), protein:round(food.protein100*factor,1), carbs:round(food.carbs100*factor,1), fat:round(food.fat100*factor,1)}); saveVault(); }
+function renderFoods(){ const q=($("foodSearch")?.value||"").toLowerCase(); const foods=state.foods.filter(f=>f.name.toLowerCase().includes(q)||String(f.tags||"").toLowerCase().includes(q)); $("customFoodsList").innerHTML=foods.map(f=>`<div class="item"><div class="item-head"><div><strong>${f.name}</strong><p>${f.kcal100} kcal/100g • P ${f.protein100} C ${f.carbs100} F ${f.fat100}</p></div><button class="tiny-btn primary" data-food="${f.id}">Přidat</button></div></div>`).join("") || `<div class="item muted">Žádné jídlo.</div>`; $$('[data-food]').forEach(b=>b.onclick=()=>quickAddFood(state.foods.find(f=>f.id===b.dataset.food))); }
+function renderFoodLog(){ const d=ensureDay(); const totals=dayTotals(); $("todayFoodTag").textContent=`${Math.round(totals.kcal)} kcal`; $("foodLogList").innerHTML=(d.foodLogs||[]).map(f=>`<div class="item"><div class="item-head"><div><strong>${f.name}</strong><p>${f.grams} g • ${f.kcal} kcal • P ${f.protein} C ${f.carbs} F ${f.fat}</p></div><button class="tiny-btn ghost danger" data-del-food="${f.id}">Smazat</button></div></div>`).join("") || `<div class="item muted">Zatím nic.</div>`; $$('[data-del-food]').forEach(b=>b.onclick=()=>{ const d=ensureDay(); d.foodLogs=d.foodLogs.filter(f=>f.id!==b.dataset.delFood); saveVault(); }); }
+function renderTargets(){ const p=state.profile; $("targetKcal").value=p.calorieTarget; $("targetProtein").value=p.proteinTarget; $("targetCarbs").value=p.carbsTarget; $("targetFat").value=p.fatTarget; }
+function saveTargets(){ const p=state.profile; p.calorieTarget=num($("targetKcal").value); p.proteinTarget=num($("targetProtein").value); p.carbsTarget=num($("targetCarbs").value); p.fatTarget=num($("targetFat").value); saveVault(); }
+
+function renderExercisePresets(){ $("exercisePresets").innerHTML=EXERCISE_PRESETS.map(p=>`<button class="preset" data-preset-ex="${p.name}"><b>${p.name}</b><span>${p.note}</span></button>`).join(""); $$('[data-preset-ex]').forEach(b=>b.onclick=()=>{$("exerciseName").value=b.dataset.presetEx; if(b.dataset.presetEx.includes("+20")) $("setKg").value=20;}); }
+function addSetToDraft(){ const name=$("exerciseName").value.trim(); if(!name) return toast("Zadej cvik."); const kg=num($("setKg").value); const reps=num($("setReps").value); const rir=num($("setRir").value); const count=Math.max(1,num($("setCount").value,1)); let ex=workoutDraft.find(e=>e.name.toLowerCase()===name.toLowerCase()); if(!ex){ ex={name, sets:[]}; workoutDraft.push(ex); } for(let i=0;i<count;i++) ex.sets.push({kg,reps,rir}); renderWorkoutDraft(); }
+function renderWorkoutDraft(){ $("workoutDraft").innerHTML=workoutDraft.map((e,ei)=>`<div class="item"><div class="item-head"><strong>${e.name}</strong><button class="tiny-btn ghost danger" data-del-ex="${ei}">Smazat</button></div><p>${e.sets.map(s=>`${s.kg}kg×${s.reps} @RIR${s.rir}`).join(" • ")}</p></div>`).join("") || `<div class="item muted">Draft je prázdný.</div>`; $$('[data-del-ex]').forEach(b=>b.onclick=()=>{workoutDraft.splice(Number(b.dataset.delEx),1); renderWorkoutDraft();}); }
+function saveWorkout(){ if(!workoutDraft.length) return toast("Přidej aspoň jednu sérii."); state.workouts.unshift({id:uid(), date:selectedDate, type:$("workoutType").value, notes:"", exercises:JSON.parse(JSON.stringify(workoutDraft))}); workoutDraft=[]; saveVault(); toast("Workout uložený."); }
+function workoutVolume(w){ return (w.exercises||[]).reduce((a,e)=>a+e.sets.reduce((s,x)=>s+num(x.kg)*num(x.reps),0),0); }
+function renderWorkoutHistory(){ $("workoutHistoryCount").textContent=state.workouts.length; $("workoutHistory").innerHTML=state.workouts.slice(0,30).map(w=>`<div class="item"><div class="item-head"><div><strong>${fmtDate(w.date)} • ${w.type}</strong><p>${w.exercises.map(e=>`${e.name}: ${e.sets.length}s`).join(" • ")}</p><p>Volume: ${Math.round(workoutVolume(w))} kg</p></div><button class="tiny-btn ghost danger" data-del-workout="${w.id}">Smazat</button></div></div>`).join("") || `<div class="item muted">Žádné workouty.</div>`; $$('[data-del-workout]').forEach(b=>b.onclick=()=>{state.workouts=state.workouts.filter(w=>w.id!==b.dataset.delWorkout); saveVault();}); }
+function renderGymInsights(){ const prs = getGymPRs().slice(0,8); const tips = prs.map(p=>`<div class="item"><strong>${p.name}</strong><p>Best set: ${p.kg}kg × ${p.reps}, e1RM ${p.e1rm} kg. Next: zkus +1 rep nebo +2.5 kg při stejném RIR.</p></div>`).join(""); $("gymInsights").innerHTML=tips || `<div class="item muted">Zapiš workouty a PR board se naplní.</div>`; }
+function getGymPRs(){ const map={}; state.workouts.forEach(w=>w.exercises.forEach(e=>e.sets.forEach(s=>{ const e1=epley(num(s.kg), num(s.reps)); if(!map[e.name] || e1>map[e.name].e1rm) map[e.name]={name:e.name, kg:num(s.kg), reps:num(s.reps), e1rm:round(e1,1)}; }))); return Object.values(map).sort((a,b)=>b.e1rm-a.e1rm); }
+
+function parseTime(str){ if(!str) return 0; const parts=String(str).trim().split(":").map(Number); if(parts.some(n=>!Number.isFinite(n))) return 0; if(parts.length===2) return parts[0]*60+parts[1]; if(parts.length===3) return parts[0]*3600+parts[1]*60+parts[2]; return Number(str)||0; }
+function fmtSeconds(sec){ sec=Math.round(sec); const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60; return h ? `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${m}:${String(s).padStart(2,"0")}`; }
+function saveRun(){ const distance=num($("runDistance").value); const seconds=parseTime($("runTime").value); if(!distance || !seconds) return toast("Zadej vzdálenost a čas."); state.runs.unshift({id:uid(), date:selectedDate, type:$("runType").value, distance, seconds, hr:num($("runHr").value), rpe:num($("runRpe").value), terrain:$("runTerrain").value, notes:$("runNotes").value.trim()}); saveVault(); toast("Běh uložený."); }
+function renderRunTypeCards(){ $("runTypeCards").innerHTML=RUN_TYPES.map(r=>`<div class="item"><strong>${r.name}</strong><p>${r.desc}</p><p><b>Target:</b> ${r.target}</p></div>`).join(""); }
+function renderRunHistory(){ $("runHistoryCount").textContent=state.runs.length; $("runHistory").innerHTML=state.runs.slice(0,30).map(r=>`<div class="item"><div class="item-head"><div><strong>${fmtDate(r.date)} • ${r.type}</strong><p>${r.distance} km za ${fmtSeconds(r.seconds)} • ${fmtSeconds(r.seconds/r.distance)}/km • HR ${r.hr||"—"} • RPE ${r.rpe||"—"}</p><p>${r.notes||""}</p></div><button class="tiny-btn ghost danger" data-del-run="${r.id}">Smazat</button></div></div>`).join("") || `<div class="item muted">Žádné běhy.</div>`; $$('[data-del-run]').forEach(b=>b.onclick=()=>{state.runs=state.runs.filter(r=>r.id!==b.dataset.delRun); saveVault();}); }
+function renderRunInsights(){ const best5=bestRace(5), best1=bestRace(1), best6=bestRace(6); const week=getWeekRunKm(new Date(selectedDate)); const html=[`<div class="item"><strong>Týdenní objem</strong><p>${round(week,1)} km / cíl ${state.profile.weeklyRunTarget} km</p></div>`, best1?`<div class="item"><strong>Best ~1 km</strong><p>${fmtSeconds(best1.seconds)} pace ${fmtSeconds(best1.seconds/best1.distance)}/km</p></div>`:"", best5?`<div class="item"><strong>Best ~5 km</strong><p>${fmtSeconds(best5.seconds)} pace ${fmtSeconds(best5.seconds/best5.distance)}/km</p></div>`:"", best6?`<div class="item"><strong>Best ~6 km</strong><p>${fmtSeconds(best6.seconds)} pace ${fmtSeconds(best6.seconds/best6.distance)}/km</p></div>`:""]; $("runInsights").innerHTML=html.join("") || `<div class="item muted">Zapiš běhy.</div>`; }
+function bestRace(target){ const close=state.runs.filter(r=>Math.abs(r.distance-target)<=target*.12); if(!close.length) return null; return close.sort((a,b)=>(a.seconds/a.distance)-(b.seconds/b.distance))[0]; }
+function getWeekRange(date){ const d=new Date(date); const day=(d.getDay()+6)%7; const start=new Date(d); start.setDate(d.getDate()-day); start.setHours(0,0,0,0); const end=new Date(start); end.setDate(start.getDate()+7); return {start,end}; }
+function getWeekRunKm(date){ const {start,end}=getWeekRange(date); return state.runs.filter(r=>{const d=new Date(r.date+"T12:00:00"); return d>=start&&d<end;}).reduce((a,r)=>a+num(r.distance),0); }
+function getWeekGymVolume(date){ const {start,end}=getWeekRange(date); return state.workouts.filter(w=>{const d=new Date(w.date+"T12:00:00"); return d>=start&&d<end;}).reduce((a,w)=>a+workoutVolume(w),0); }
+
+function epley(w,r){ return w*(1+r/30); }
+function brzycki(w,r){ return r>=37 ? 0 : w*36/(37-r); }
+function calc1rm(){ const w=num($("calc1rmWeight").value), reps=num($("calc1rmReps").value), rpe=num($("calc1rmRpe").value,10); const rir=clamp(10-rpe,0,10); const e1=epley(w,reps), b=brzycki(w,reps), rpeAdj=epley(w,reps+rir); $("calc1rmOut").innerHTML=`Epley: <b>${round(e1,1)} kg</b><br>Brzycki: <b>${round(b,1)} kg</b><br>RPE-adjusted e1RM: <b>${round(rpeAdj,1)} kg</b> (${reps} reps @RPE ${rpe}, cca RIR ${round(rir,1)})`; }
+function calcVo2(){ const meters=num($("cooperMeters").value); const dist=num($("vo2Distance").value); const sec=parseTime($("vo2Time").value); let lines=[]; if(meters) lines.push(`Cooper VO₂max: <b>${round((meters-504.9)/44.73,1)}</b> ml/kg/min`); if(dist&&sec){ const min=sec/60; const v=dist*1000/min; const vo2 = -4.6 + 0.182258*v + 0.000104*v*v; lines.push(`Race estimate: <b>${round(vo2,1)}</b> ml/kg/min (${dist} km za ${fmtSeconds(sec)})`); } $("calcVo2Out").innerHTML=lines.join("<br>")||"Zadej Cooper metry nebo závod."; }
+function calcTdee(){ const age=num($("tdeeAge").value), h=num($("tdeeHeight").value), w=num($("tdeeWeight").value), act=num($("tdeeActivity").value); const bmr=10*w+6.25*h-5*age+5; const tdee=bmr*act; const bmi=w/((h/100)**2); $("calcTdeeOut").innerHTML=`BMI: <b>${round(bmi,1)}</b><br>BMR: <b>${Math.round(bmr)}</b> kcal<br>TDEE odhad: <b>${Math.round(tdee)}</b> kcal<br>Cut: ${Math.round(tdee-350)}–${Math.round(tdee-500)} kcal • Lean bulk: ${Math.round(tdee+150)}–${Math.round(tdee+300)} kcal`; }
+function calcPace(){ const d=num($("paceDistance").value), s=parseTime($("paceTime").value); if(!d||!s) return; const pace=s/d; $("calcPaceOut").innerHTML=`Pace: <b>${fmtSeconds(pace)}/km</b><br>Speed: <b>${round(3600/pace,2)} km/h</b>`; }
+function calcPrediction(){ const d1=num($("predD1").value), t1=parseTime($("predT1").value), d2=num($("predD2").value); if(!d1||!t1||!d2) return; const pred=t1*Math.pow(d2/d1,1.06); $("calcPredOut").innerHTML=`Predikce na ${d2} km: <b>${fmtSeconds(pred)}</b><br>Pace: ${fmtSeconds(pred/d2)}/km`; }
+function calcMacros(){ const kcal=num($("macroKcal").value), w=num($("macroWeight").value), pk=num($("macroProteinKg").value), fk=num($("macroFatKg").value); const p=Math.round(w*pk), f=Math.round(w*fk), c=Math.round((kcal-p*4-f*9)/4); $("calcMacroOut").innerHTML=`Protein: <b>${p} g</b><br>Tuky: <b>${f} g</b><br>Sacharidy: <b>${c} g</b>`; }
+
+function saveJournal(){ state.journal.unshift({id:uid(), date:selectedDate, mood:num($("journalMood").value), energy:num($("journalEnergy").value), text:$("journalText").value.trim()}); $("journalText").value=""; saveVault(); }
+function renderJournal(){ $("journalList").innerHTML=state.journal.slice(0,20).map(j=>`<div class="item"><strong>${fmtDate(j.date)} • mood ${j.mood||"—"} • energy ${j.energy||"—"}</strong><p>${j.text||""}</p></div>`).join("") || `<div class="item muted">Žádný deník.</div>`; }
+function addTask(){ const text=$("taskText").value.trim(); if(!text) return; state.tasks.unshift({id:uid(), text, done:false, date:selectedDate}); $("taskText").value=""; saveVault(); }
+function renderTasks(){ $("taskList").innerHTML=state.tasks.map(t=>`<div class="item"><div class="item-head"><strong class="${t.done?'done':''}">${t.text}</strong><button class="tiny-btn ghost" data-task="${t.id}">${t.done?'Undo':'Done'}</button></div><p>${fmtDate(t.date)}</p></div>`).join("") || `<div class="item muted">Žádné tasky.</div>`; $$('[data-task]').forEach(b=>b.onclick=()=>{const t=state.tasks.find(x=>x.id===b.dataset.task); t.done=!t.done; saveVault();}); }
+function saveBook(){ const title=$("bookTitle").value.trim(); if(!title) return; state.books.unshift({id:uid(), date:selectedDate, title, pages:num($("bookPages").value), current:num($("bookCurrent").value), total:num($("bookTotal").value), note:$("bookNote").value.trim()}); saveVault(); }
+function renderBooks(){ $("bookList").innerHTML=state.books.slice(0,20).map(b=>`<div class="item"><strong>${b.title}</strong><p>${fmtDate(b.date)} • dnes ${b.pages||0} stran • ${b.total?Math.round((b.current/b.total)*100):0}%</p><p>${b.note||""}</p></div>`).join("") || `<div class="item muted">Žádné čtení.</div>`; }
+function addHabit(){ const name=$("habitName").value.trim(); if(!name) return; state.habits.unshift({id:uid(), name, history:{}}); $("habitName").value=""; saveVault(); }
+function renderHabits(){ $("habitList").innerHTML=state.habits.map(h=>`<div class="item"><div class="item-head"><strong>${h.name}</strong><button class="tiny-btn ${h.history[selectedDate]?'primary':'ghost'}" data-habit="${h.id}">${h.history[selectedDate]?'Done':'Mark'}</button></div><p>Streak: ${habitStreak(h)} dní</p></div>`).join(""); $$('[data-habit]').forEach(b=>b.onclick=()=>{const h=state.habits.find(x=>x.id===b.dataset.habit); h.history[selectedDate]=!h.history[selectedDate]; saveVault();}); }
+function habitStreak(h){ let streak=0; const d=new Date(selectedDate+"T12:00:00"); for(let i=0;i<365;i++){ const iso=d.toISOString().slice(0,10); if(h.history[iso]) streak++; else break; d.setDate(d.getDate()-1); } return streak; }
+
+function renderPrBoard(){
+  const gym=getGymPRs()[0]; const one=bestRace(1), five=bestRace(5); const totalKm=state.runs.reduce((a,r)=>a+num(r.distance),0); const totalVol=state.workouts.reduce((a,w)=>a+workoutVolume(w),0);
+  const stats=[
+    ["Best gym e1RM", gym?`${gym.name}: ${gym.e1rm} kg`:"—"], ["Best 1 km", one?fmtSeconds(one.seconds):"—"], ["Best 5 km", five?fmtSeconds(five.seconds):"—"], ["Total run", `${round(totalKm,1)} km`], ["Gym volume", `${Math.round(totalVol/1000)}k kg`], ["Custom foods", state.foods.length], ["Journal logs", state.journal.length], ["Books logs", state.books.length]
+  ];
+  $("prBoard").innerHTML=stats.map(s=>`<div class="stat"><span>${s[0]}</span><strong>${s[1]}</strong></div>`).join("");
+}
+function drawRing(canvas, pct){ const ctx=canvas.getContext("2d"); const w=canvas.width,h=canvas.height,r=62; ctx.clearRect(0,0,w,h); ctx.lineWidth=14; ctx.strokeStyle="rgba(255,255,255,.12)"; ctx.beginPath(); ctx.arc(w/2,h/2,r,0,Math.PI*2); ctx.stroke(); const grad=ctx.createLinearGradient(0,0,w,h); grad.addColorStop(0,"#7c5cff"); grad.addColorStop(1,"#00e0ff"); ctx.strokeStyle=grad; ctx.lineCap="round"; ctx.beginPath(); ctx.arc(w/2,h/2,r,-Math.PI/2,-Math.PI/2+Math.PI*2*(pct/100)); ctx.stroke(); }
+function renderCharts(){ drawLineChart($("weightChart"), Object.entries(state.days).sort(([a],[b])=>a.localeCompare(b)).slice(-30).map(([date,d])=>({label:date.slice(5), value:num(d.weight,NaN)})).filter(x=>Number.isFinite(x.value)), "kg"); drawMultiBar($("nutritionChart"), Object.entries(state.days).sort(([a],[b])=>a.localeCompare(b)).slice(-14).map(([date])=>({label:date.slice(5), kcal:dayTotals(date).kcal, protein:dayTotals(date).protein}))); drawLineChart($("runChart"), weeklySeries("run"), "km"); drawLineChart($("gymChart"), weeklySeries("gym"), "kg"); }
+function weeklySeries(type){ const res=[]; for(let i=7;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i*7); const {start}=getWeekRange(d); res.push({label:start.toISOString().slice(5,10), value:type==="run"?getWeekRunKm(start):Math.round(getWeekGymVolume(start))}); } return res; }
+function clearCanvas(c){ const ctx=c.getContext("2d"); const rect=c.getBoundingClientRect(); const ratio=devicePixelRatio||1; c.width=rect.width*ratio; c.height=Number(c.getAttribute("height"))*ratio; ctx.scale(ratio,ratio); ctx.clearRect(0,0,rect.width,Number(c.getAttribute("height"))); return {ctx,w:rect.width,h:Number(c.getAttribute("height"))}; }
+function drawLineChart(canvas,data,suffix){ const {ctx,w,h}=clearCanvas(canvas); if(!data.length){ctx.fillStyle="#8b97ad";ctx.fillText("Zatím málo dat",20,40);return;} const vals=data.map(d=>d.value); const min=Math.min(...vals), max=Math.max(...vals); const pad=34; ctx.strokeStyle="rgba(255,255,255,.12)"; ctx.beginPath(); ctx.moveTo(pad,10); ctx.lineTo(pad,h-pad); ctx.lineTo(w-10,h-pad); ctx.stroke(); const grad=ctx.createLinearGradient(0,0,w,0); grad.addColorStop(0,"#7c5cff"); grad.addColorStop(1,"#00e0ff"); ctx.strokeStyle=grad; ctx.lineWidth=3; ctx.beginPath(); data.forEach((d,i)=>{ const x=pad+(w-pad-18)*(i/(Math.max(1,data.length-1))); const y=(h-pad)-((d.value-min)/(max-min||1))*(h-pad-22); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.stroke(); ctx.fillStyle="#9aa7bd"; ctx.font="11px sans-serif"; data.forEach((d,i)=>{ if(i%Math.ceil(data.length/6)===0) ctx.fillText(d.label, pad+(w-pad-18)*(i/(Math.max(1,data.length-1)))-10,h-10); }); ctx.fillText(`${round(min,1)}${suffix}`,4,h-pad); ctx.fillText(`${round(max,1)}${suffix}`,4,18); }
+function drawMultiBar(canvas,data){ const {ctx,w,h}=clearCanvas(canvas); if(!data.length){ctx.fillStyle="#8b97ad";ctx.fillText("Zatím málo dat",20,40);return;} const max=Math.max(...data.map(d=>d.kcal)); const pad=34; const bw=(w-pad-18)/data.length*.55; data.forEach((d,i)=>{ const x=pad+(w-pad-18)*(i/data.length)+bw*.3; const kh=(d.kcal/(max||1))*(h-pad-24); const ph=(d.protein*8/(max||1))*(h-pad-24); const g=ctx.createLinearGradient(0,h-pad-kh,0,h-pad); g.addColorStop(0,"#7c5cff"); g.addColorStop(1,"#00e0ff"); ctx.fillStyle=g; roundRect(ctx,x,h-pad-kh,bw,kh,7); ctx.fill(); ctx.fillStyle="rgba(35,209,139,.75)"; roundRect(ctx,x+bw*.62,h-pad-ph,bw*.32,ph,6); ctx.fill(); }); ctx.fillStyle="#9aa7bd"; ctx.font="11px sans-serif"; ctx.fillText("kcal + protein×8",12,18); }
+function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+function exportBackup(){ const blob = new Blob([JSON.stringify({encryptedVault: encryptedVaultCache, plaintextWarning:"This export contains encrypted vault, not plaintext."}, null, 2)], {type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`training-arc-backup-${todayIso()}.json`; a.click(); URL.revokeObjectURL(a.href); }
+async function importBackup(e){ const file=e.target.files[0]; if(!file) return; const obj=JSON.parse(await file.text()); const vault=obj.encryptedVault || obj; localStorage.setItem(APP_KEY, JSON.stringify(vault)); toast("Backup importnutý. Appka se znovu načte, pak zadej heslo k vaultu."); setTimeout(()=>location.reload(),1000); }
+async function changePassword(){ const old=prompt("Staré vault heslo/PIN:"); if(!old) return; try{ await decryptVault(encryptedVaultCache, old); const nw=prompt("Nové vault heslo/PIN min 4 znaky:"); if(!nw||nw.length<4) return toast("Moc krátké."); vaultPassword=nw; await saveVault(); toast("Heslo změněno."); }catch(e){ toast("Staré heslo nesedí."); } }
+
+function initCloudConfigFields(){ const cfg=JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY)||"{}"); if($("supabaseUrl")){ $("supabaseUrl").value=cfg.url||""; $("supabaseAnon").value=cfg.anon||""; } }
+function saveCloudConfig(){ const cfg={url:$("supabaseUrl").value.trim(), anon:$("supabaseAnon").value.trim()}; localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cfg)); setupSupabase(); toast("Cloud config uložený."); }
+function setupSupabase(){ const cfg=JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY)||"{}"); if(!cfg.url||!cfg.anon) return null; if(!window.supabase) { $("cloudStatus").textContent="Supabase knihovna není načtená. Připoj internet nebo otevři přes server."; return null; } supabaseClient = window.supabase.createClient(cfg.url, cfg.anon); return supabaseClient; }
+async function cloudSignup(){ const sb=setupSupabase(); if(!sb) return toast("Nejdřív vlož Supabase config."); const {error}=await sb.auth.signUp({email:$("cloudEmail").value, password:$("cloudPassword").value}); $("cloudStatus").textContent=error?error.message:"Sign up hotový. Možná potvrď email podle nastavení Supabase."; }
+async function cloudSignin(){ const sb=setupSupabase(); if(!sb) return toast("Nejdřív vlož Supabase config."); const {data,error}=await sb.auth.signInWithPassword({email:$("cloudEmail").value, password:$("cloudPassword").value}); $("cloudStatus").textContent=error?error.message:`Přihlášen: ${data.user.email}`; }
+async function cloudPush(){ const sb=setupSupabase(); if(!sb) return; await saveVault(false); const {data:{user}}=await sb.auth.getUser(); if(!user) return toast("Nejdřív se přihlas do cloudu."); const {error}=await sb.from("training_arc_vaults").upsert({user_id:user.id, vault:encryptedVaultCache, updated_at:new Date().toISOString()}); $("cloudStatus").textContent=error?error.message:"Cloud push hotový – zašifrovaný vault je online."; }
+async function cloudPull(){ const sb=setupSupabase(); if(!sb) return; const {data:{user}}=await sb.auth.getUser(); if(!user) return toast("Nejdřív se přihlas do cloudu."); const {data,error}=await sb.from("training_arc_vaults").select("vault,updated_at").eq("user_id",user.id).single(); if(error) { $("cloudStatus").textContent=error.message; return; } localStorage.setItem(APP_KEY, JSON.stringify(data.vault)); $("cloudStatus").textContent=`Cloud pull hotový (${data.updated_at}). Znovu odemkni vault.`; toast("Staženo z cloudu. Appka se načte znovu."); setTimeout(()=>location.reload(),1200); }
+async function cloudSignout(){ const sb=setupSupabase(); if(!sb) return; await sb.auth.signOut(); $("cloudStatus").textContent="Odhlášeno."; }
+
+if("serviceWorker" in navigator){ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{})); }
+init();
