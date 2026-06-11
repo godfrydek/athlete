@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#080a12" />
+  <title>Training Arc OS</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="lockScreen" class="lock-screen">
+    <div class="lock-card glass">
+      <div class="brand-orb"></div>
+      <p class="eyebrow">PRIVATE TRAINING SYSTEM</p>
+      <h1>Training Arc OS</h1>
+      <p class="muted">Lokální deník pro kalorie, gym, běh, váhu, grafy a AI tipy. Data zůstávají v prohlížeči.</p>
+      <div id="pinSetup" class="pin-panel hidden">
+        <label>Nastav nový PIN</label>
+        <input id="newPin" type="password" inputmode="numeric" minlength="4" placeholder="Min. 4 čísla" />
+        <button id="createPinBtn" class="primary full">Vytvořit secure režim</button>
+        <button id="skipPinBtn" class="ghost full">Používat bez PINu</button>
+      </div>
+      <div id="pinLogin" class="pin-panel hidden">
+        <label>Zadej PIN</label>
+        <input id="pinInput" type="password" inputmode="numeric" placeholder="••••" />
+        <button id="unlockBtn" class="primary full">Odemknout</button>
+        <button id="resetBtn" class="danger-link">Reset appky</button>
+      </div>
+      <p id="lockMsg" class="message"></p>
+    </div>
+  </div>
+
+  <main id="app" class="app hidden">
+    <aside class="sidebar glass">
+      <div class="logo-row">
+        <div class="logo">TA</div>
+        <div>
+          <strong>Training Arc OS</strong>
+          <span>private beta</span>
+        </div>
+      </div>
+      <nav id="nav">
+        <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+        <button class="nav-btn" data-view="nutrition">Kalorie</button>
+        <button class="nav-btn" data-view="gym">Gym</button>
+        <button class="nav-btn" data-view="running">Běh</button>
+        <button class="nav-btn" data-view="stats">Grafy</button>
+        <button class="nav-btn" data-view="settings">Nastavení</button>
+      </nav>
+      <div class="side-note">
+        <span id="todayText"></span>
+        <button id="lockBtn" class="ghost small">Zamknout</button>
+      </div>
+    </aside>
+
+    <section class="content">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">TODAY'S ARC</p>
+          <h2 id="pageTitle">Dashboard</h2>
+        </div>
+        <div class="top-actions">
+          <button id="quickExport" class="ghost">Export</button>
+          <button id="demoBtn" class="ghost">Demo data</button>
+        </div>
+      </header>
+
+      <section id="dashboard" class="view active-view">
+        <div class="hero glass">
+          <div>
+            <p class="eyebrow">DAILY SCORE</p>
+            <h1><span id="dailyScore">0</span><small>/100</small></h1>
+            <p id="coachSummary" class="muted">Zapiš dnešní data a systém ti hodí tipy.</p>
+          </div>
+          <div class="rings">
+            <div class="ring"><span id="kcalRing">0%</span><small>kcal</small></div>
+            <div class="ring"><span id="proteinRing">0%</span><small>protein</small></div>
+            <div class="ring"><span id="trainingRing">0</span><small>sessions</small></div>
+          </div>
+        </div>
+        <div class="grid cards-4">
+          <article class="card glass"><span>Kalorie</span><strong id="dashKcal">0 / 2900</strong><small id="dashKcalNote">0 zbývá</small></article>
+          <article class="card glass"><span>Protein</span><strong id="dashProtein">0 / 175 g</strong><small>daily target</small></article>
+          <article class="card glass"><span>Váha</span><strong id="dashWeight">— kg</strong><small id="weightTrend">trend čeká</small></article>
+          <article class="card glass"><span>Týdenní km</span><strong id="dashKm">0 km</strong><small id="runTrend">běžecký objem</small></article>
+        </div>
+        <div class="grid two">
+          <section class="panel glass">
+            <div class="panel-head"><h3>Rychlý zápis</h3><span>1 minuta</span></div>
+            <form id="quickForm" class="form-grid">
+              <input name="weight" type="number" step="0.1" placeholder="Váha kg" />
+              <input name="kcal" type="number" placeholder="Kalorie" />
+              <input name="protein" type="number" placeholder="Protein g" />
+              <input name="steps" type="number" placeholder="Kroky" />
+              <button class="primary" type="submit">Uložit dnešek</button>
+            </form>
+          </section>
+          <section class="panel glass">
+            <div class="panel-head"><h3>AI coach tipy</h3><span>rule-based</span></div>
+            <ul id="tipsList" class="tips"></ul>
+          </section>
+        </div>
+      </section>
+
+      <section id="nutrition" class="view">
+        <div class="grid two">
+          <section class="panel glass">
+            <div class="panel-head"><h3>Denní příjem</h3><span>kalorie & makra</span></div>
+            <form id="nutritionForm" class="stack">
+              <input name="date" type="date" />
+              <div class="form-grid">
+                <input name="kcal" type="number" placeholder="kcal" />
+                <input name="protein" type="number" placeholder="protein g" />
+                <input name="carbs" type="number" placeholder="sacharidy g" />
+                <input name="fat" type="number" placeholder="tuky g" />
+                <input name="fiber" type="number" placeholder="vláknina g" />
+                <input name="water" type="number" step="0.1" placeholder="voda l" />
+              </div>
+              <textarea name="note" placeholder="Poznámka: hlad, energie, cheat meal, atd."></textarea>
+              <button class="primary" type="submit">Uložit jídlo</button>
+            </form>
+          </section>
+          <section class="panel glass">
+            <div class="panel-head"><h3>Cíle</h3><span>editable</span></div>
+            <form id="targetsForm" class="form-grid">
+              <input name="kcal" type="number" placeholder="kcal target" />
+              <input name="protein" type="number" placeholder="protein target" />
+              <input name="carbs" type="number" placeholder="carbs target" />
+              <input name="fat" type="number" placeholder="fat target" />
+              <button class="primary" type="submit">Uložit cíle</button>
+            </form>
+          </section>
+        </div>
+        <section class="panel glass"><div class="panel-head"><h3>Poslední zápisy</h3><span>nutrition log</span></div><div id="nutritionLog" class="log-list"></div></section>
+      </section>
+
+      <section id="gym" class="view">
+        <div class="grid two">
+          <section class="panel glass">
+            <div class="panel-head"><h3>Workout log</h3><span>sets / reps / RIR</span></div>
+            <form id="gymForm" class="stack">
+              <input name="date" type="date" />
+              <div class="form-grid">
+                <input name="workout" placeholder="Workout: Upper / Lower" />
+                <input name="exercise" placeholder="Cvik" />
+                <input name="sets" type="number" placeholder="série" />
+                <input name="reps" placeholder="reps např. 8,7,6" />
+                <input name="weight" type="number" step="0.5" placeholder="váha kg" />
+                <input name="rir" type="number" step="0.5" placeholder="RIR" />
+              </div>
+              <textarea name="note" placeholder="Pocit, bolest, technika, pumpa..."></textarea>
+              <button class="primary" type="submit">Přidat cvik</button>
+            </form>
+          </section>
+          <section class="panel glass">
+            <div class="panel-head"><h3>Progression tip</h3><span>auto</span></div>
+            <div id="progressionTip" class="big-tip">Přidej první cviky a ukážu progres.</div>
+          </section>
+        </div>
+        <section class="panel glass"><div class="panel-head"><h3>Historie gymu</h3><span>latest first</span></div><div id="gymLog" class="log-list"></div></section>
+      </section>
+
+      <section id="running" class="view">
+        <div class="grid two">
+          <section class="panel glass">
+            <div class="panel-head"><h3>Run log</h3><span>distance / pace / HR</span></div>
+            <form id="runForm" class="stack">
+              <input name="date" type="date" />
+              <div class="form-grid">
+                <input name="type" placeholder="Easy / Tempo / Interval / Long" />
+                <input name="distance" type="number" step="0.01" placeholder="km" />
+                <input name="time" placeholder="čas mm:ss nebo hh:mm:ss" />
+                <input name="hr" type="number" placeholder="avg HR" />
+                <input name="rpe" type="number" min="1" max="10" placeholder="RPE 1-10" />
+                <input name="elevation" type="number" placeholder="elevation m" />
+              </div>
+              <textarea name="note" placeholder="Vítr, terén, boty, puchýř, finish..."></textarea>
+              <button class="primary" type="submit">Přidat běh</button>
+            </form>
+          </section>
+          <section class="panel glass">
+            <div class="panel-head"><h3>PR board</h3><span>auto z běhů</span></div>
+            <div id="prBoard" class="pr-board"></div>
+          </section>
+        </div>
+        <section class="panel glass"><div class="panel-head"><h3>Historie běhů</h3><span>latest first</span></div><div id="runLog" class="log-list"></div></section>
+      </section>
+
+      <section id="stats" class="view">
+        <div class="grid two">
+          <section class="panel glass"><div class="panel-head"><h3>Váha</h3><span>7+ dní</span></div><canvas id="weightChart" height="220"></canvas></section>
+          <section class="panel glass"><div class="panel-head"><h3>Kalorie</h3><span>daily</span></div><canvas id="kcalChart" height="220"></canvas></section>
+          <section class="panel glass"><div class="panel-head"><h3>Běžecký objem</h3><span>km</span></div><canvas id="runChart" height="220"></canvas></section>
+          <section class="panel glass"><div class="panel-head"><h3>Gym volume</h3><span>kg × reps × sets</span></div><canvas id="gymChart" height="220"></canvas></section>
+        </div>
+      </section>
+
+      <section id="settings" class="view">
+        <div class="grid two">
+          <section class="panel glass">
+            <div class="panel-head"><h3>Data</h3><span>backup</span></div>
+            <div class="actions-col">
+              <button id="exportBtn" class="primary">Export JSON</button>
+              <label class="file-btn">Import JSON<input id="importInput" type="file" accept="application/json" /></label>
+              <button id="clearBtn" class="danger">Smazat všechny zápisy</button>
+            </div>
+          </section>
+          <section class="panel glass">
+            <div class="panel-head"><h3>Secure</h3><span>local PIN</span></div>
+            <p class="muted">PIN chrání appku v tomto prohlížeči. Není to bankovní security, ale proti náhodnému otevření stačí.</p>
+            <form id="pinChangeForm" class="stack">
+              <input name="pin" type="password" inputmode="numeric" placeholder="Nový PIN" />
+              <button class="primary" type="submit">Změnit PIN</button>
+            </form>
+          </section>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
