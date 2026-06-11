@@ -1,10 +1,10 @@
 {
-  "name": "Training Arc OS",
+  "name": "Training Arc OS v4",
   "short_name": "Arc OS",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#070A12",
   "theme_color": "#070A12",
-  "description": "Private all-in-one training, nutrition and life tracker.",
+  "description": "Private all-in-one encrypted training, nutrition, life and cloud tracker.",
   "icons": []
 }

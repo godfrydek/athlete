@@ -1,12 +1,16 @@
-/* Training Arc OS v3 - local-first encrypted life + training tracker */
-const APP_KEY = "trainingArcOS.v3.vault";
-const CLOUD_CONFIG_KEY = "trainingArcOS.v3.cloudConfig";
+/* Training Arc OS v4 - all-in-one encrypted training + life tracker */
+const APP_KEY = "trainingArcOS.v4.vault";
+const LEGACY_APP_KEYS = ["trainingArcOS.v3.vault", "trainingArcOS.v2.vault", "trainingArcOS.v1.vault"];
+const CLOUD_CONFIG_KEY = "trainingArcOS.v4.cloudConfig";
+const LEGACY_CLOUD_CONFIG_KEY = "trainingArcOS.v3.cloudConfig";
+const EMAIL_CONFIG_KEY = "trainingArcOS.v4.emailConfig";
 let state = null;
 let vaultPassword = "";
 let encryptedVaultCache = null;
 let selectedDate = new Date().toISOString().slice(0,10);
 let workoutDraft = [];
 let lastFoodCalc = null;
+let pendingFoodImage = "";
 let supabaseClient = null;
 let currentView = "dashboard";
 
@@ -21,57 +25,124 @@ const toast = (msg) => { const el=$("toast"); el.textContent=msg; el.classList.r
 const num = (v, fallback=0) => { if(v === "" || v === null || v === undefined) return fallback; const n = Number(v); return Number.isFinite(n) ? n : fallback; };
 
 const RUN_TYPES = [
-  {name:"Easy / Zone 2", desc:"Lehký běh na objem a recovery. Měl bys být schopný mluvit.", target:"RPE 3–5, nízký stres"},
+  {name:"Easy / Zone 2", desc:"Lehký běh na objem a recovery. Měl bys být schopný mluvit.", target:"RPE 3–5, konverzační tempo"},
+  {name:"Recovery jog", desc:"Ultra lehce po těžkém dni. Účel je regenerace, ne ego.", target:"RPE 2–3"},
+  {name:"Steady run", desc:"Pohodlné stabilní tempo mezi easy a tempo. Dobrý aerobic base.", target:"RPE 5–6"},
   {name:"Tempo", desc:"Středně tvrdý běh kolem prahu. Super na 5–10 km výkon.", target:"RPE 7–8"},
-  {name:"Intervals", desc:"Rychlé úseky s pauzou. Např. 400m/800m/1km repeats.", target:"RPE 8–9"},
+  {name:"Threshold intervals", desc:"Delší kontrolované úseky. Např. 3×8 min nebo 4×1 km.", target:"RPE 7–8"},
+  {name:"VO₂max intervals", desc:"Tvrdší intervaly 400–1000 m s pauzou. Rychlost bez totální smrti.", target:"RPE 8–9"},
   {name:"900 easy + 100 sprint", desc:"Tvůj nápad: 900 m lehce + 100 m sprint × 5–6. Good pro speed + form.", target:"5–6 km"},
+  {name:"Strides", desc:"Krátká zrychlení po easy běhu. Technika, kadence, rychlost.", target:"6–10× 15–25 s"},
   {name:"Long run", desc:"Dlouhý běh pro základ. Klidně cyklostezka a kontrola tempa.", target:"RPE 4–6"},
   {name:"Progression", desc:"Začneš easy a postupně zrychluješ. Skvělý kompromis.", target:"negativní split"},
-  {name:"Recovery jog", desc:"Ultra lehce po těžkém dni. Účel je regenerace, ne ego.", target:"RPE 2–3"},
+  {name:"Fartlek", desc:"Hra s rychlostí podle pocitu, terénu nebo hudby.", target:"volné úseky"},
   {name:"Hills", desc:"Kopce / sklony. Síla nohou, běžecká technika, power.", target:"krátké úseky"},
   {name:"Race / Time trial", desc:"Závod nebo test. Trackni podmínky, vítr, povrch, finish.", target:"PR attempt"},
-  {name:"Treadmill incline", desc:"Pás, sklon, kontrola tempa. Dobré v horku nebo zimě.", target:"incline / pace"}
+  {name:"Treadmill incline", desc:"Pás, sklon, kontrola tempa. Dobré v horku nebo zimě.", target:"incline / pace"},
+  {name:"Brick / gym + run", desc:"Krátký běh okolo gymu nebo po směně. Praktický hybrid arc.", target:"low stress"}
 ];
 
-const WORKOUT_TYPES = ["Upper", "Lower", "Fullbody", "Push", "Pull", "Calisthenics", "Recovery", "Race prep"];
+const WORKOUT_TYPES = ["Upper", "Lower", "Fullbody", "Push", "Pull", "Calisthenics", "Recovery", "Race prep", "Hybrid", "Arms", "Back focus", "Chest focus", "Legs rehab"];
 const EXERCISE_PRESETS = [
   {name:"Strict push-ups", note:"kliky – striktní forma"},
+  {name:"Push-up AMRAP", note:"max reps set"},
   {name:"Weighted push-ups +10 kg", note:"lehčí weighted varianta"},
   {name:"Weighted push-ups +20 kg", note:"tvoje častá těžší varianta"},
-  {name:"Push-up AMRAP", note:"max reps set"},
   {name:"Explosive push-ups", note:"power / calisthenics"},
   {name:"Deficit push-ups", note:"větší ROM"},
+  {name:"Diamond push-ups", note:"triceps"},
+  {name:"Archer push-ups", note:"unilateral control"},
+  {name:"Pike push-ups", note:"ramena"},
+  {name:"Handstand push-up progression", note:"skill"},
+  {name:"Pull-ups", note:"strict reps"},
   {name:"Explosive pull-ups", note:"muscle-up carryover"},
+  {name:"Chin-ups", note:"biceps/lats"},
+  {name:"Muscle-up technique", note:"transition + dip"},
+  {name:"Dips", note:"strict"},
   {name:"Explosive dips", note:"power dips"},
   {name:"Weighted dips +20 kg", note:"síla triceps/hrudník"},
   {name:"Incline bench press", note:"hlavní hrudník"},
+  {name:"Bench press", note:"flat strength"},
+  {name:"Chest press machine", note:"stable chest volume"},
+  {name:"Pec deck", note:"isolation chest"},
   {name:"Lat pulldown MAG", note:"lats šířka"},
   {name:"V-bar row", note:"mid/lower back"},
+  {name:"Chest-supported row", note:"upper back"},
+  {name:"Cable row", note:"back volume"},
+  {name:"Rear delt fly", note:"rear delts"},
+  {name:"Lateral raises", note:"side delts"},
+  {name:"Cable lateral raises", note:"side delt constant tension"},
+  {name:"Biceps curl", note:"arms"},
+  {name:"Hammer curl", note:"brachialis"},
+  {name:"Triceps pushdown", note:"triceps"},
+  {name:"Overhead triceps extension", note:"long head"},
   {name:"DB RDL", note:"posterior chain"},
   {name:"Leg press", note:"safe lower progress"},
   {name:"Leg extension", note:"quad isolation"},
   {name:"Leg curl", note:"hamstrings"},
   {name:"Calf raises", note:"běh + estetika"},
-  {name:"Hyperextensions", note:"záda/glutes"}
+  {name:"Hyperextensions", note:"záda/glutes"},
+  {name:"Plank", note:"core"},
+  {name:"Hanging knee raises", note:"core"}
 ];
 
 function defaultState(){
   return {
-    version: 3,
+    version: 4,
     createdAt: new Date().toISOString(),
     profile: { name:"Filip", age:17, sex:"male", height:182, weight:80, activity:1.725, calorieTarget:2900, proteinTarget:175, carbsTarget:360, fatTarget:75, weeklyRunTarget:30 },
-    days: {}, foods: seedFoods(), workouts: [], runs: [], journal: [], tasks: [], habits: seedHabits(), books: [], settings: { theme:"dark" }
+    days: {}, foods: seedFoods(), workouts: [], exercisePresets: [], runs: [], journal: [], tasks: [], habits: seedHabits(), books: [], settings: { theme:"dark" }
   };
 }
 function seedFoods(){
-  return [
-    {id:uid(), name:"Kuřecí prsa", kcal100:110, protein100:23, carbs100:0, fat100:2, defaultGrams:200, tags:"protein"},
-    {id:uid(), name:"Skyr", kcal100:62, protein100:11, carbs100:4, fat100:0.2, defaultGrams:150, tags:"protein"},
-    {id:uid(), name:"Rýže vařená", kcal100:130, protein100:2.7, carbs100:28, fat100:0.3, defaultGrams:250, tags:"carbs"},
-    {id:uid(), name:"Ovesné vločky", kcal100:370, protein100:13, carbs100:60, fat100:7, defaultGrams:80, tags:"carbs"},
-    {id:uid(), name:"Banán", kcal100:89, protein100:1.1, carbs100:23, fat100:0.3, defaultGrams:120, tags:"carbs"},
-    {id:uid(), name:"Vejce", kcal100:143, protein100:13, carbs100:1.1, fat100:10, defaultGrams:60, tags:"fat protein"}
+  const rows = [
+    ["Kuřecí prsa",110,23,0,2,200,"protein lean meal", "🍗"],
+    ["Krůtí prsa",105,23,0,1.5,200,"protein lean", "🦃"],
+    ["Hovězí mleté 5%",137,21,0,5,200,"protein beef", "🥩"],
+    ["Losos",208,20,0,13,150,"protein fat omega", "🐟"],
+    ["Tuňák ve vlastní šťávě",116,26,0,1,120,"protein can", "🐟"],
+    ["Vejce",143,13,1.1,10,60,"fat protein", "🥚"],
+    ["Vaječné bílky",52,11,0.7,0.2,200,"protein", "🥚"],
+    ["Skyr",62,11,4,0.2,150,"protein dairy", "🥣"],
+    ["Řecký jogurt 0%",59,10,3.6,0.4,200,"protein dairy", "🥣"],
+    ["Tvaroh odtučněný",67,12,4,0.5,250,"protein dairy", "🥣"],
+    ["Protein prášek",390,78,8,6,30,"protein supplement", "🥤"],
+    ["Mléko 1.5%",47,3.4,4.8,1.5,250,"dairy", "🥛"],
+    ["Rýže vařená",130,2.7,28,0.3,250,"carbs meal", "🍚"],
+    ["Jasmínová rýže suchá",365,7,80,1,90,"carbs dry", "🍚"],
+    ["Těstoviny vařené",157,5.8,31,0.9,250,"carbs meal", "🍝"],
+    ["Brambory vařené",87,1.9,20,0.1,300,"carbs", "🥔"],
+    ["Batáty",86,1.6,20,0.1,250,"carbs", "🍠"],
+    ["Ovesné vločky",370,13,60,7,80,"carbs breakfast", "🥣"],
+    ["Pečivo / rohlík",286,9,57,3.5,50,"carbs bread", "🥖"],
+    ["Toustový chléb",265,9,49,3.2,60,"carbs bread", "🍞"],
+    ["Tortilla",310,8,52,8,60,"carbs wrap", "🌯"],
+    ["Banán",89,1.1,23,0.3,120,"carbs fruit", "🍌"],
+    ["Jablko",52,0.3,14,0.2,180,"fruit", "🍎"],
+    ["Borůvky",57,0.7,14,0.3,100,"fruit", "🫐"],
+    ["Mražená zelenina",45,2.5,7,0.5,250,"veg micronutrients", "🥦"],
+    ["Rajčata",18,0.9,3.9,0.2,150,"veg", "🍅"],
+    ["Okurka",15,0.7,3.6,0.1,150,"veg", "🥒"],
+    ["Olivový olej",884,0,0,100,10,"fat", "🫒"],
+    ["Arašídové máslo",588,25,20,50,20,"fat snack", "🥜"],
+    ["Avokádo",160,2,9,15,100,"fat", "🥑"],
+    ["Mandle",579,21,22,50,30,"fat snack", "🌰"],
+    ["Hořká čokoláda",546,5,61,31,20,"snack", "🍫"],
+    ["Cornflakes",357,8,84,0.4,60,"carbs breakfast", "🥣"],
+    ["Müsli",380,10,65,8,70,"carbs breakfast", "🥣"],
+    ["Protein pudink",76,10,6,1.5,200,"protein snack", "🍮"],
+    ["Šunka kuřecí",105,20,2,2,100,"protein", "🥪"],
+    ["Eidam 30%",263,27,0,16,50,"protein fat", "🧀"],
+    ["Mozzarella light",160,20,2,8,125,"protein dairy", "🧀"],
+    ["Pizza průměr",260,11,33,9,300,"cheat meal", "🍕"],
+    ["Burger průměr",295,15,28,15,250,"meal", "🍔"],
+    ["Hranolky",312,3.4,41,15,150,"snack", "🍟"],
+    ["Kebab box odhad",190,12,17,8,450,"meal estimate", "🥙"],
+    ["Gainer / recovery shake",380,25,58,5,100,"supplement carbs", "🥤"],
+    ["Iontový nápoj",28,0,7,0,500,"run carbs", "🧃"],
+    ["Energetický gel",280,0,70,0,40,"run carbs", "⚡"]
   ];
+  return rows.map(([name,kcal100,protein100,carbs100,fat100,defaultGrams,tags,icon])=>({id:uid(), name, kcal100, protein100, carbs100, fat100, defaultGrams, tags, icon, image:""}));
 }
 function seedHabits(){
   return [
@@ -108,7 +179,7 @@ async function encryptState(payload, password){
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(password, salt);
   const data = await crypto.subtle.encrypt({name:"AES-GCM", iv}, key, enc.encode(JSON.stringify(payload)));
-  return { app:"TrainingArcOS", version:3, kdf:"PBKDF2-SHA256-220k", cipher:"AES-GCM", salt:b64(salt), iv:b64(iv), data:b64(data), updatedAt:new Date().toISOString() };
+  return { app:"TrainingArcOS", version:4, kdf:"PBKDF2-SHA256-220k", cipher:"AES-GCM", salt:b64(salt), iv:b64(iv), data:b64(data), updatedAt:new Date().toISOString() };
 }
 async function decryptVault(vault, password){
   const key = await deriveKey(password, fromB64(vault.salt));
@@ -123,14 +194,25 @@ async function saveVault(show=true){
   renderAll();
 }
 
+function getStoredVault(){
+  const primary = localStorage.getItem(APP_KEY);
+  if(primary) return JSON.parse(primary);
+  for(const key of LEGACY_APP_KEYS){
+    const raw = localStorage.getItem(key);
+    if(raw) return JSON.parse(raw);
+  }
+  return null;
+}
+
 async function init(){
   selectedDate = todayIso();
   $("datePicker").value = selectedDate;
   $("todayLabel").textContent = new Date().toLocaleDateString("cs-CZ", {weekday:"long", day:"numeric", month:"long", year:"numeric"});
-  encryptedVaultCache = JSON.parse(localStorage.getItem(APP_KEY) || "null");
+  encryptedVaultCache = getStoredVault();
   $("vaultStatus").textContent = encryptedVaultCache ? "Vault nalezen – zadej PIN/heslo" : "Nový vault – nastav PIN/heslo";
   bindEvents();
   initCloudConfigFields();
+  initEmailConfigFields();
 }
 function openApp(){
   $("lockScreen").classList.add("hidden"); $("appShell").classList.remove("hidden");
@@ -144,29 +226,30 @@ function hydrateStaticControls(){
 }
 
 function bindEvents(){
-  $("unlockBtn").onclick = async()=>{ const pass=$("vaultPassword").value; if(!pass || pass.length<4) return toast("Zadej aspoň 4 znaky."); try{ encryptedVaultCache = JSON.parse(localStorage.getItem(APP_KEY)||"null"); if(!encryptedVaultCache) return toast("Vault zatím neexistuje. Klikni na Vytvořit nový vault."); state = await decryptVault(encryptedVaultCache, pass); vaultPassword=pass; openApp(); toast("Odemčeno."); } catch(e){ toast("Špatný PIN/heslo nebo poškozený vault."); }};
-  $("createVaultBtn").onclick = async()=>{ const pass=$("vaultPassword").value; if(!pass || pass.length<4) return toast("Nastav PIN/heslo aspoň 4 znaky."); if(localStorage.getItem(APP_KEY) && !confirm("Přepsat existující lokální vault?")) return; state=defaultState(); vaultPassword=pass; await saveVault(false); openApp(); toast("Nový secure vault vytvořen."); };
+  $("unlockBtn").onclick = async()=>{ const pass=$("vaultPassword").value; if(!pass || pass.length<4) return toast("Zadej aspoň 4 znaky."); try{ encryptedVaultCache = getStoredVault(); if(!encryptedVaultCache) return toast("Vault zatím neexistuje. Klikni na Vytvořit nový vault."); state = await decryptVault(encryptedVaultCache, pass); vaultPassword=pass; openApp(); toast("Odemčeno."); } catch(e){ toast("Špatný PIN/heslo nebo poškozený vault."); }};
+  $("createVaultBtn").onclick = async()=>{ const pass=$("vaultPassword").value; if(!pass || pass.length<4) return toast("Nastav PIN/heslo aspoň 4 znaky."); if(getStoredVault() && !confirm("Přepsat existující lokální vault?")) return; state=defaultState(); vaultPassword=pass; await saveVault(false); openApp(); toast("Nový secure vault vytvořen."); };
   $("demoVaultBtn").onclick = async()=>{ const pass=$("vaultPassword").value || "demo1234"; state=demoState(); vaultPassword=pass; await saveVault(false); openApp(); toast("Demo vault vytvořený. Heslo je to, co jsi zadal; pokud nic, demo1234."); };
-  $("resetVaultBtn").onclick = ()=>{ if(confirm("Smazat lokální vault? Nejde vrátit zpět.")){ localStorage.removeItem(APP_KEY); location.reload(); }};
+  $("resetVaultBtn").onclick = ()=>{ if(confirm("Smazat lokální vault? Nejde vrátit zpět.")){ localStorage.removeItem(APP_KEY); LEGACY_APP_KEYS.forEach(k=>localStorage.removeItem(k)); location.reload(); }};
   $("quickSaveBtn").onclick = ()=>saveVault(); $("lockBtn").onclick=()=>location.reload();
   $("themeToggle").onclick=()=>{ state.settings.theme = state.settings.theme === "light" ? "dark" : "light"; applyTheme(); saveVault(false); };
   $("datePicker").onchange=(e)=>{ selectedDate=e.target.value || todayIso(); renderAll(); };
   $$(".nav-btn").forEach(btn=>btn.onclick=()=>switchView(btn.dataset.view));
   $("saveDayBtn").onclick = saveQuickDay;
-  $("calcFoodBtn").onclick = calculateFood; $("saveFoodBtn").onclick=saveCustomFood; $("addFoodToDayBtn").onclick=addCalculatedFoodToDay; $("foodSearch").oninput=renderFoods; $("clearFoodSearch").onclick=()=>{$("foodSearch").value=""; renderFoods();};
-  ["foodGrams","foodKcal100","foodProtein100","foodCarbs100","foodFat100"].forEach(id=>$(id).oninput=calculateFood);
+  $("calcFoodBtn").onclick = calculateFood; $("saveFoodBtn").onclick=saveCustomFood; $("addFoodToDayBtn").onclick=addCalculatedFoodToDay; $("foodSearch").oninput=renderFoods; $("clearFoodSearch").onclick=()=>{$("foodSearch").value=""; renderFoods();}; $("foodImageInput").onchange=handleFoodImage; $("clearFoodImageBtn").onclick=clearFoodImage;
+  ["foodGrams","foodKcal100","foodProtein100","foodCarbs100","foodFat100","foodName","foodIcon","foodTags"].forEach(id=>$(id).oninput=calculateFood);
   $("saveTargetsBtn").onclick=saveTargets;
-  $("addSetBtn").onclick=addSetToDraft; $("saveWorkoutBtn").onclick=saveWorkout; $("clearWorkoutDraftBtn").onclick=()=>{workoutDraft=[]; renderWorkoutDraft();};
+  $("addSetBtn").onclick=addSetToDraft; $("saveWorkoutBtn").onclick=saveWorkout; $("clearWorkoutDraftBtn").onclick=()=>{workoutDraft=[]; renderWorkoutDraft();}; $("addCustomExerciseBtn").onclick=addCustomExercisePreset; $("workoutImportInput").onchange=importWorkoutHistory;
   $("saveRunBtn").onclick=saveRun;
   $("calc1rmBtn").onclick=calc1rm; $("calcVo2Btn").onclick=calcVo2; $("calcTdeeBtn").onclick=calcTdee; $("calcPaceBtn").onclick=calcPace; $("calcPredBtn").onclick=calcPrediction; $("calcMacroBtn").onclick=calcMacros;
   $("saveJournalBtn").onclick=saveJournal; $("addTaskBtn").onclick=addTask; $("saveBookBtn").onclick=saveBook; $("addHabitBtn").onclick=addHabit;
   $("exportBtn").onclick=exportBackup; $("importInput").onchange=importBackup; $("changePasswordBtn").onclick=changePassword;
-  $("saveCloudConfigBtn").onclick=saveCloudConfig; $("cloudSignupBtn").onclick=cloudSignup; $("cloudSigninBtn").onclick=cloudSignin; $("cloudPushBtn").onclick=cloudPush; $("cloudPullBtn").onclick=cloudPull; $("cloudSignoutBtn").onclick=cloudSignout;
+  $("saveCloudConfigBtn").onclick=saveCloudConfig; $("cloudSignupBtn").onclick=cloudSignup; $("cloudSigninBtn").onclick=cloudSignin; $("cloudPushBtn").onclick=cloudPush; $("cloudPullBtn").onclick=cloudPull; $("cloudSignoutBtn").onclick=cloudSignout; $("saveEmailConfigBtn").onclick=saveEmailConfig; $("mailtoDailyBtn").onclick=openDailyEmail; $("webhookDailyBtn").onclick=sendDailyWebhook; $("webhookVaultBtn").onclick=sendVaultWebhook;
 }
 function switchView(view){ currentView=view; $$(".nav-btn").forEach(b=>b.classList.toggle("active", b.dataset.view===view)); $$(".view").forEach(v=>v.classList.toggle("active", v.id===view)); const titleMap={dashboard:"Dashboard", nutrition:"Kalorie & food database", gym:"Gym workouts", running:"Running arc", calculators:"Kalkulačky", life:"Life OS", analytics:"Grafy & staty", settings:"Sync & secure"}; $("viewTitle").textContent=titleMap[view]||view; if(view==="analytics") setTimeout(renderCharts,30); }
 
+function migrateState(){ if(!state.exercisePresets) state.exercisePresets=[]; if(!state.foods?.length) state.foods=seedFoods(); if(!state.version || state.version<4) state.version=4; }
 function renderAll(){
-  if(!state) return; ensureDay(); renderDashboard(); renderDayInputs(); renderFoods(); renderFoodLog(); renderTargets(); renderWorkoutDraft(); renderWorkoutHistory(); renderGymInsights(); renderRunHistory(); renderRunInsights(); renderJournal(); renderTasks(); renderBooks(); renderHabits(); renderPrBoard(); if(currentView==="analytics") renderCharts();
+  if(!state) return; migrateState(); ensureDay(); renderDashboard(); renderDayInputs(); renderFoodImagePreview(); renderFoods(); renderFoodLog(); renderTargets(); renderWorkoutDraft(); renderWorkoutHistory(); renderGymInsights(); renderRunHistory(); renderRunInsights(); renderJournal(); renderTasks(); renderBooks(); renderHabits(); renderPrBoard(); renderEmailStatus(); if(currentView==="analytics") renderCharts();
 }
 function dayTotals(iso=selectedDate){
   const d=ensureDay(iso); const food = (d.foodLogs||[]).reduce((a,f)=>({kcal:a.kcal+num(f.kcal), protein:a.protein+num(f.protein), carbs:a.carbs+num(f.carbs), fat:a.fat+num(f.fat)}), {kcal:0,protein:0,carbs:0,fat:0});
@@ -194,21 +277,95 @@ function getCoachTips(){
   return tips.slice(0,5);
 }
 
+function escapeHtml(str){ return String(str ?? "").replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m])); }
+function foodThumb(food){
+  if(food?.image) return `<span class="food-thumb"><img src="${food.image}" alt=""></span>`;
+  return `<span class="food-thumb">${escapeHtml(food?.icon || "🍽️")}</span>`;
+}
+function renderFoodImagePreview(){
+  const el=$("foodImagePreview");
+  if(!el) return;
+  el.innerHTML = pendingFoodImage ? `<img src="${pendingFoodImage}" alt="food preview"><span>Obrázek připravený</span>` : "Bez obrázku";
+}
+function fileToDataUrl(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
+async function handleFoodImage(e){
+  const file=e.target.files?.[0]; if(!file) return;
+  if(file.size > 1_500_000) return toast("Obrázek je moc velký. Dej radši pod 1.5 MB, ať vault nenabobtná.");
+  pendingFoodImage = await fileToDataUrl(file);
+  renderFoodImagePreview();
+  toast("Obrázek jídla přidán.");
+}
+function clearFoodImage(){ pendingFoodImage=""; if($("foodImageInput")) $("foodImageInput").value=""; renderFoodImagePreview(); }
 function calculateFood(){
   const grams=num($("foodGrams").value); const factor=grams/100; const kcal=num($("foodKcal100").value)*factor; const protein=num($("foodProtein100").value)*factor; const carbs=num($("foodCarbs100").value)*factor; const fat=num($("foodFat100").value)*factor;
-  lastFoodCalc={ id:uid(), name:$("foodName").value.trim()||"Custom food", grams, kcal:round(kcal,0), protein:round(protein,1), carbs:round(carbs,1), fat:round(fat,1), kcal100:num($("foodKcal100").value), protein100:num($("foodProtein100").value), carbs100:num($("foodCarbs100").value), fat100:num($("foodFat100").value) };
-  $("foodCalcResult").innerHTML = `<b>${lastFoodCalc.name}</b> (${grams||0} g): <b>${lastFoodCalc.kcal} kcal</b>, P ${lastFoodCalc.protein} g / C ${lastFoodCalc.carbs} g / F ${lastFoodCalc.fat} g`;
+  lastFoodCalc={ id:uid(), name:$("foodName").value.trim()||"Custom food", grams, kcal:round(kcal,0), protein:round(protein,1), carbs:round(carbs,1), fat:round(fat,1), kcal100:num($("foodKcal100").value), protein100:num($("foodProtein100").value), carbs100:num($("foodCarbs100").value), fat100:num($("foodFat100").value), tags:$("foodTags").value.trim()||"custom", icon:$("foodIcon").value.trim()||"🍽️", image:pendingFoodImage };
+  $("foodCalcResult").innerHTML = `${foodThumb(lastFoodCalc)} <b>${escapeHtml(lastFoodCalc.name)}</b> (${grams||0} g): <b>${lastFoodCalc.kcal} kcal</b>, P ${lastFoodCalc.protein} g / C ${lastFoodCalc.carbs} g / F ${lastFoodCalc.fat} g`;
   return lastFoodCalc;
 }
-function saveCustomFood(){ const f=calculateFood(); if(!f.name || !f.kcal100) return toast("Zadej aspoň název a kcal/100g."); state.foods.unshift({id:uid(), name:f.name, kcal100:f.kcal100, protein100:f.protein100, carbs100:f.carbs100, fat100:f.fat100, defaultGrams:f.grams||100, tags:"custom"}); saveVault(); toast("Custom jídlo uloženo."); }
+function saveCustomFood(){ const f=calculateFood(); if(!f.name || !f.kcal100) return toast("Zadej aspoň název a kcal/100g."); state.foods.unshift({id:uid(), name:f.name, kcal100:f.kcal100, protein100:f.protein100, carbs100:f.carbs100, fat100:f.fat100, defaultGrams:f.grams||100, tags:f.tags||"custom", icon:f.icon||"🍽️", image:f.image||""}); clearFoodImage(); saveVault(); toast("Custom jídlo uloženo."); }
 function addCalculatedFoodToDay(){ const f=calculateFood(); if(!f.grams || !f.kcal) return toast("Zadej gramáž a kcal."); ensureDay().foodLogs.push(f); saveVault(); }
-function quickAddFood(food){ const grams = Number(prompt(`Gramáž pro ${food.name}:`, food.defaultGrams||100)); if(!grams) return; const factor=grams/100; ensureDay().foodLogs.push({id:uid(), name:food.name, grams, kcal:round(food.kcal100*factor,0), protein:round(food.protein100*factor,1), carbs:round(food.carbs100*factor,1), fat:round(food.fat100*factor,1)}); saveVault(); }
-function renderFoods(){ const q=($("foodSearch")?.value||"").toLowerCase(); const foods=state.foods.filter(f=>f.name.toLowerCase().includes(q)||String(f.tags||"").toLowerCase().includes(q)); $("customFoodsList").innerHTML=foods.map(f=>`<div class="item"><div class="item-head"><div><strong>${f.name}</strong><p>${f.kcal100} kcal/100g • P ${f.protein100} C ${f.carbs100} F ${f.fat100}</p></div><button class="tiny-btn primary" data-food="${f.id}">Přidat</button></div></div>`).join("") || `<div class="item muted">Žádné jídlo.</div>`; $$('[data-food]').forEach(b=>b.onclick=()=>quickAddFood(state.foods.find(f=>f.id===b.dataset.food))); }
-function renderFoodLog(){ const d=ensureDay(); const totals=dayTotals(); $("todayFoodTag").textContent=`${Math.round(totals.kcal)} kcal`; $("foodLogList").innerHTML=(d.foodLogs||[]).map(f=>`<div class="item"><div class="item-head"><div><strong>${f.name}</strong><p>${f.grams} g • ${f.kcal} kcal • P ${f.protein} C ${f.carbs} F ${f.fat}</p></div><button class="tiny-btn ghost danger" data-del-food="${f.id}">Smazat</button></div></div>`).join("") || `<div class="item muted">Zatím nic.</div>`; $$('[data-del-food]').forEach(b=>b.onclick=()=>{ const d=ensureDay(); d.foodLogs=d.foodLogs.filter(f=>f.id!==b.dataset.delFood); saveVault(); }); }
+function quickAddFood(food){ const grams = Number(prompt(`Gramáž pro ${food.name}:`, food.defaultGrams||100)); if(!grams) return; const factor=grams/100; ensureDay().foodLogs.push({id:uid(), name:food.name, grams, kcal:round(food.kcal100*factor,0), protein:round(food.protein100*factor,1), carbs:round(food.carbs100*factor,1), fat:round(food.fat100*factor,1), icon:food.icon||"🍽️", image:food.image||""}); saveVault(); }
+function fillFoodForm(food){ $("foodName").value=food.name; $("foodGrams").value=food.defaultGrams||100; $("foodKcal100").value=food.kcal100; $("foodProtein100").value=food.protein100; $("foodCarbs100").value=food.carbs100; $("foodFat100").value=food.fat100; $("foodTags").value=food.tags||""; $("foodIcon").value=food.icon||""; pendingFoodImage=food.image||""; renderFoodImagePreview(); calculateFood(); toast("Jídlo vyplněné v kalkulátoru."); }
+function deleteFoodPreset(id){ if(!confirm("Smazat toto jídlo z databáze?")) return; state.foods=state.foods.filter(f=>f.id!==id); saveVault(); }
+function renderFoods(){ const q=($("foodSearch")?.value||"").toLowerCase(); const foods=state.foods.filter(f=>f.name.toLowerCase().includes(q)||String(f.tags||"").toLowerCase().includes(q)); $("customFoodsList").innerHTML=foods.map(f=>`<div class="item"><div class="item-head"><div class="food-card-main">${foodThumb(f)}<div><strong>${escapeHtml(f.name)}</strong><p>${f.kcal100} kcal/100g • P ${f.protein100} C ${f.carbs100} F ${f.fat100}</p><div class="micro">${String(f.tags||"").split(/[, ]+/).filter(Boolean).slice(0,4).map(t=>`<span class="pill">${escapeHtml(t)}</span>`).join("")}</div></div></div><div class="item-actions"><button class="tiny-btn primary" data-food="${f.id}">Přidat</button><button class="tiny-btn ghost" data-fill-food="${f.id}">Vyplnit</button><button class="tiny-btn ghost danger" data-delete-food="${f.id}">Smazat</button></div></div></div>`).join("") || `<div class="item muted">Žádné jídlo.</div>`; $$('[data-food]').forEach(b=>b.onclick=()=>quickAddFood(state.foods.find(f=>f.id===b.dataset.food))); $$('[data-fill-food]').forEach(b=>b.onclick=()=>fillFoodForm(state.foods.find(f=>f.id===b.dataset.fillFood))); $$('[data-delete-food]').forEach(b=>b.onclick=()=>deleteFoodPreset(b.dataset.deleteFood)); }
+function renderFoodLog(){ const d=ensureDay(); const totals=dayTotals(); $("todayFoodTag").textContent=`${Math.round(totals.kcal)} kcal`; $("foodLogList").innerHTML=(d.foodLogs||[]).map(f=>`<div class="item"><div class="item-head"><div class="food-card-main">${foodThumb(f)}<div><strong>${escapeHtml(f.name)}</strong><p>${f.grams} g • ${f.kcal} kcal • P ${f.protein} C ${f.carbs} F ${f.fat}</p></div></div><button class="tiny-btn ghost danger" data-del-food="${f.id}">Smazat</button></div></div>`).join("") || `<div class="item muted">Zatím nic.</div>`; $$('[data-del-food]').forEach(b=>b.onclick=()=>{ const d=ensureDay(); d.foodLogs=d.foodLogs.filter(f=>f.id!==b.dataset.delFood); saveVault(); }); }
 function renderTargets(){ const p=state.profile; $("targetKcal").value=p.calorieTarget; $("targetProtein").value=p.proteinTarget; $("targetCarbs").value=p.carbsTarget; $("targetFat").value=p.fatTarget; }
 function saveTargets(){ const p=state.profile; p.calorieTarget=num($("targetKcal").value); p.proteinTarget=num($("targetProtein").value); p.carbsTarget=num($("targetCarbs").value); p.fatTarget=num($("targetFat").value); saveVault(); }
 
-function renderExercisePresets(){ $("exercisePresets").innerHTML=EXERCISE_PRESETS.map(p=>`<button class="preset" data-preset-ex="${p.name}"><b>${p.name}</b><span>${p.note}</span></button>`).join(""); $$('[data-preset-ex]').forEach(b=>b.onclick=()=>{$("exerciseName").value=b.dataset.presetEx; if(b.dataset.presetEx.includes("+20")) $("setKg").value=20;}); }
+function allExercisePresets(){
+  const custom = state?.exercisePresets || [];
+  const seen = new Set();
+  return [...custom, ...EXERCISE_PRESETS].filter(p=>{ const k=p.name.toLowerCase(); if(seen.has(k)) return false; seen.add(k); return true; });
+}
+function renderExercisePresets(){
+  $("exercisePresets").innerHTML=allExercisePresets().map(p=>`<button class="preset" data-preset-ex="${escapeHtml(p.name)}"><b>${escapeHtml(p.name)}</b><span>${escapeHtml(p.note||"")}</span></button>`).join("");
+  $$('[data-preset-ex]').forEach(b=>b.onclick=()=>{ $("exerciseName").value=b.dataset.presetEx; if(b.dataset.presetEx.includes("+20")) $("setKg").value=20; });
+}
+function addCustomExercisePreset(){
+  const name=$("customExerciseName").value.trim(); if(!name) return toast("Zadej název cviku.");
+  const note=$("customExerciseNote").value.trim()||"custom";
+  state.exercisePresets = state.exercisePresets || [];
+  if(!allExercisePresets().some(p=>p.name.toLowerCase()===name.toLowerCase())) state.exercisePresets.unshift({id:uid(), name, note});
+  $("customExerciseName").value=""; $("customExerciseNote").value=""; saveVault(); toast("Cvik přidaný do presetů.");
+}
+function parseCsvLike(text){
+  const lines=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean); if(!lines.length) return [];
+  const delim = [";",",","\t"].sort((a,b)=>lines[0].split(b).length-lines[0].split(a).length)[0];
+  const headers=lines[0].split(delim).map(h=>h.trim().toLowerCase());
+  const idx=headers.findIndex(h=>/exercise|cvik|name|název|title|movement/.test(h));
+  if(idx<0) return lines.flatMap(l=>extractExerciseNames(l));
+  return lines.slice(1).map(l=>l.split(delim)[idx]?.trim()).filter(Boolean);
+}
+function extractExerciseNames(text){
+  const names=[];
+  const patterns=[/exercise\s*[:=]\s*([^,;\n]+)/gi,/cvik\s*[:=]\s*([^,;\n]+)/gi,/name\s*[:=]\s*([^,;\n]+)/gi];
+  patterns.forEach(re=>{ let m; while((m=re.exec(text))) names.push(m[1].trim()); });
+  EXERCISE_PRESETS.forEach(p=>{ if(text.toLowerCase().includes(p.name.toLowerCase())) names.push(p.name); });
+  return names;
+}
+function collectNamesFromJson(obj, out=[]){
+  if(Array.isArray(obj)) obj.forEach(x=>collectNamesFromJson(x,out));
+  else if(obj && typeof obj === "object"){
+    for(const [k,v] of Object.entries(obj)){
+      if(typeof v === "string" && /exercise|cvik|name|title|movement/i.test(k) && v.length>1 && v.length<80) out.push(v);
+      collectNamesFromJson(v,out);
+    }
+  }
+  return out;
+}
+async function importWorkoutHistory(e){
+  const file=e.target.files?.[0]; if(!file) return;
+  const text=await file.text(); let names=[];
+  try{ names=collectNamesFromJson(JSON.parse(text)); } catch(_){ names=parseCsvLike(text); }
+  const counts={}; names.map(n=>String(n).replace(/^"|"$/g,"").trim()).filter(n=>n.length>1&&n.length<70).forEach(n=>{ counts[n]=(counts[n]||0)+1; });
+  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  state.exercisePresets = state.exercisePresets || [];
+  let added=0;
+  sorted.forEach(([name,count])=>{ if(!allExercisePresets().some(p=>p.name.toLowerCase()===name.toLowerCase())){ state.exercisePresets.push({id:uid(), name, note:`import z ${file.name} • ${count}×`}); added++; }});
+  const report = sorted.slice(0,12).map(([n,c])=>`${escapeHtml(n)} (${c}×)`).join(" • ");
+  $("workoutImportReport").innerHTML = sorted.length ? `<span class="import-good">Nalezeno ${sorted.length} cviků, přidáno ${added} nových presetů.</span><br>${report}` : `<span class="import-warn">Nic jsem nenašel. Pošli mi export sem do chatu a upravím parser podle formátu Lyftu.</span>`;
+  saveVault();
+}
 function addSetToDraft(){ const name=$("exerciseName").value.trim(); if(!name) return toast("Zadej cvik."); const kg=num($("setKg").value); const reps=num($("setReps").value); const rir=num($("setRir").value); const count=Math.max(1,num($("setCount").value,1)); let ex=workoutDraft.find(e=>e.name.toLowerCase()===name.toLowerCase()); if(!ex){ ex={name, sets:[]}; workoutDraft.push(ex); } for(let i=0;i<count;i++) ex.sets.push({kg,reps,rir}); renderWorkoutDraft(); }
 function renderWorkoutDraft(){ $("workoutDraft").innerHTML=workoutDraft.map((e,ei)=>`<div class="item"><div class="item-head"><strong>${e.name}</strong><button class="tiny-btn ghost danger" data-del-ex="${ei}">Smazat</button></div><p>${e.sets.map(s=>`${s.kg}kg×${s.reps} @RIR${s.rir}`).join(" • ")}</p></div>`).join("") || `<div class="item muted">Draft je prázdný.</div>`; $$('[data-del-ex]').forEach(b=>b.onclick=()=>{workoutDraft.splice(Number(b.dataset.delEx),1); renderWorkoutDraft();}); }
 function saveWorkout(){ if(!workoutDraft.length) return toast("Přidej aspoň jednu sérii."); state.workouts.unshift({id:uid(), date:selectedDate, type:$("workoutType").value, notes:"", exercises:JSON.parse(JSON.stringify(workoutDraft))}); workoutDraft=[]; saveVault(); toast("Workout uložený."); }
@@ -266,9 +423,53 @@ function exportBackup(){ const blob = new Blob([JSON.stringify({encryptedVault: 
 async function importBackup(e){ const file=e.target.files[0]; if(!file) return; const obj=JSON.parse(await file.text()); const vault=obj.encryptedVault || obj; localStorage.setItem(APP_KEY, JSON.stringify(vault)); toast("Backup importnutý. Appka se znovu načte, pak zadej heslo k vaultu."); setTimeout(()=>location.reload(),1000); }
 async function changePassword(){ const old=prompt("Staré vault heslo/PIN:"); if(!old) return; try{ await decryptVault(encryptedVaultCache, old); const nw=prompt("Nové vault heslo/PIN min 4 znaky:"); if(!nw||nw.length<4) return toast("Moc krátké."); vaultPassword=nw; await saveVault(); toast("Heslo změněno."); }catch(e){ toast("Staré heslo nesedí."); } }
 
-function initCloudConfigFields(){ const cfg=JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY)||"{}"); if($("supabaseUrl")){ $("supabaseUrl").value=cfg.url||""; $("supabaseAnon").value=cfg.anon||""; } }
+function initEmailConfigFields(){
+  const cfg=JSON.parse(localStorage.getItem(EMAIL_CONFIG_KEY)||"{}");
+  if($("reportEmail")) $("reportEmail").value=cfg.email||"";
+  if($("emailWebhook")) $("emailWebhook").value=cfg.webhook||"";
+}
+function saveEmailConfig(){
+  const cfg={email:$("reportEmail").value.trim(), webhook:$("emailWebhook").value.trim()};
+  localStorage.setItem(EMAIL_CONFIG_KEY, JSON.stringify(cfg));
+  renderEmailStatus(); toast("Email config uložený.");
+}
+function getEmailConfig(){ return JSON.parse(localStorage.getItem(EMAIL_CONFIG_KEY)||"{}"); }
+function dailyReportText(){
+  const d=ensureDay(); const totals=dayTotals(); const runs=state.runs.filter(r=>r.date===selectedDate); const workouts=state.workouts.filter(w=>w.date===selectedDate);
+  return [`Training Arc OS daily report - ${fmtDate(selectedDate)}`,`Arc score: ${$("arcScore")?.textContent || "—"}/100`,`Kcal: ${Math.round(totals.kcal)} / ${state.profile.calorieTarget}`,`Protein: ${Math.round(totals.protein)} g / ${state.profile.proteinTarget} g`,`Weight: ${d.weight || "—"} kg`,`Steps: ${d.steps || 0}`,`Sleep: ${d.sleep || "—"} h`,`Mood: ${d.mood || "—"}/10`,`Runs: ${runs.map(r=>`${r.type} ${r.distance} km ${fmtSeconds(r.seconds)}`).join("; ") || "none"}`,`Workouts: ${workouts.map(w=>`${w.type} (${w.exercises.length} exercises)`).join("; ") || "none"}`,`Notes: ${d.notes || "—"}`,"", "Coach tips:", ...getCoachTips().map(t=>`- ${t}`)].join("\n");
+}
+function openDailyEmail(){
+  const cfg=getEmailConfig(); const to=$("reportEmail").value.trim()||cfg.email||""; const subject=`Training Arc OS report ${selectedDate}`; const body=dailyReportText();
+  location.href=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  $("emailStatus").textContent="Otevřel jsem mail klienta s reportem. Ručně odešli.";
+}
+async function sendDailyWebhook(){
+  const cfg={email:$("reportEmail").value.trim(), webhook:$("emailWebhook").value.trim()}; if(!cfg.webhook) return toast("Vlož webhook/Formspree endpoint.");
+  const payload={to:cfg.email, subject:`Training Arc OS report ${selectedDate}`, message:dailyReportText(), date:selectedDate, type:"daily_report"};
+  await sendWebhookPayload(cfg.webhook, payload, "Daily report odeslaný webhookem.");
+}
+async function sendVaultWebhook(){
+  const cfg={email:$("reportEmail").value.trim(), webhook:$("emailWebhook").value.trim()}; if(!cfg.webhook) return toast("Vlož webhook/Formspree endpoint.");
+  if(!confirm("Opravdu poslat zašifrovaný vault na webhook? Je encrypted, ale pořád je to tvůj backup.")) return;
+  await saveVault(false);
+  const payload={to:cfg.email, subject:`Training Arc OS encrypted vault ${selectedDate}`, message:"Encrypted vault backup attached as JSON payload.", encryptedVault:encryptedVaultCache, date:selectedDate, type:"encrypted_vault"};
+  await sendWebhookPayload(cfg.webhook, payload, "Encrypted vault odeslaný webhookem.");
+}
+async function sendWebhookPayload(url, payload, okMsg){
+  try{
+    const res=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    $("emailStatus").textContent=okMsg; toast(okMsg);
+  }catch(e){ $("emailStatus").textContent=`Webhook fail: ${e.message}. Zkus mailto fallback nebo jiný endpoint.`; toast("Webhook se nepovedl."); }
+}
+function renderEmailStatus(){
+  const el=$("emailStatus"); if(!el) return; const cfg=getEmailConfig();
+  el.textContent = cfg.email || cfg.webhook ? `Email: ${cfg.email||"—"} • webhook: ${cfg.webhook?"nastaven":"—"}` : "Email není nastavený.";
+}
+
+function initCloudConfigFields(){ const cfg=JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY)||localStorage.getItem(LEGACY_CLOUD_CONFIG_KEY)||"{}"); if($("supabaseUrl")){ $("supabaseUrl").value=cfg.url||""; $("supabaseAnon").value=cfg.anon||""; } }
 function saveCloudConfig(){ const cfg={url:$("supabaseUrl").value.trim(), anon:$("supabaseAnon").value.trim()}; localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cfg)); setupSupabase(); toast("Cloud config uložený."); }
-function setupSupabase(){ const cfg=JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY)||"{}"); if(!cfg.url||!cfg.anon) return null; if(!window.supabase) { $("cloudStatus").textContent="Supabase knihovna není načtená. Připoj internet nebo otevři přes server."; return null; } supabaseClient = window.supabase.createClient(cfg.url, cfg.anon); return supabaseClient; }
+function setupSupabase(){ const cfg=JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY)||localStorage.getItem(LEGACY_CLOUD_CONFIG_KEY)||"{}"); if(!cfg.url||!cfg.anon) return null; if(!window.supabase) { $("cloudStatus").textContent="Supabase knihovna není načtená. Připoj internet nebo otevři přes server."; return null; } supabaseClient = window.supabase.createClient(cfg.url, cfg.anon); return supabaseClient; }
 async function cloudSignup(){ const sb=setupSupabase(); if(!sb) return toast("Nejdřív vlož Supabase config."); const {error}=await sb.auth.signUp({email:$("cloudEmail").value, password:$("cloudPassword").value}); $("cloudStatus").textContent=error?error.message:"Sign up hotový. Možná potvrď email podle nastavení Supabase."; }
 async function cloudSignin(){ const sb=setupSupabase(); if(!sb) return toast("Nejdřív vlož Supabase config."); const {data,error}=await sb.auth.signInWithPassword({email:$("cloudEmail").value, password:$("cloudPassword").value}); $("cloudStatus").textContent=error?error.message:`Přihlášen: ${data.user.email}`; }
 async function cloudPush(){ const sb=setupSupabase(); if(!sb) return; await saveVault(false); const {data:{user}}=await sb.auth.getUser(); if(!user) return toast("Nejdřív se přihlas do cloudu."); const {error}=await sb.from("training_arc_vaults").upsert({user_id:user.id, vault:encryptedVaultCache, updated_at:new Date().toISOString()}); $("cloudStatus").textContent=error?error.message:"Cloud push hotový – zašifrovaný vault je online."; }

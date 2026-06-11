@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#070A12" />
-  <title>Training Arc OS v3</title>
+  <title>Training Arc OS v4</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -41,7 +41,7 @@
         <div class="brand-mark mini">TA</div>
         <div>
           <strong>Training Arc OS</strong>
-          <span>v3 Premium</span>
+          <span>v4 All-in-One</span>
         </div>
       </div>
       <nav id="nav" class="nav">
@@ -126,6 +126,13 @@
               <label>Protein / 100 g<input id="foodProtein100" type="number" step="0.1" placeholder="3"></label>
               <label>Sacharidy / 100 g<input id="foodCarbs100" type="number" step="0.1" placeholder="28"></label>
               <label>Tuky / 100 g<input id="foodFat100" type="number" step="0.1" placeholder="0.4"></label>
+              <label>Tagy / kategorie<input id="foodTags" placeholder="protein, carbs, snack..."></label>
+              <label>Emoji / icon<input id="foodIcon" maxlength="3" placeholder="🍚"></label>
+            </div>
+            <div class="food-image-row">
+              <label class="file-label ghost">Přidat obrázek<input id="foodImageInput" type="file" accept="image/*"></label>
+              <button id="clearFoodImageBtn" class="ghost danger" type="button">Smazat obrázek</button>
+              <div id="foodImagePreview" class="food-preview muted small">Bez obrázku</div>
             </div>
             <div class="calc-result" id="foodCalcResult">Výsledek se ukáže tady.</div>
             <div class="button-row wrap">
@@ -143,8 +150,8 @@
 
         <div class="grid two">
           <section class="panel glass">
-            <div class="panel-head"><h3>Custom food databáze</h3><span class="tag">rychlé přidání</span></div>
-            <div class="input-row"><input id="foodSearch" placeholder="Hledat jídlo…"><button id="clearFoodSearch" class="ghost">Clear</button></div>
+            <div class="panel-head"><h3>Food databáze</h3><span class="tag">presety + custom + fotky</span></div>
+            <div class="input-row"><input id="foodSearch" placeholder="Hledat jídlo, tag, protein, carbs…"><button id="clearFoodSearch" class="ghost">Clear</button></div>
             <div id="customFoodsList" class="list tall"></div>
           </section>
 
@@ -182,9 +189,26 @@
           </section>
 
           <section class="panel glass">
-            <div class="panel-head"><h3>Tvoje rychlé cviky</h3><span class="tag">presets</span></div>
-            <p class="muted small">Přidal jsem i časté kliky/variace, weighted push-ups, explosive věci a tvoje hlavní gym cviky.</p>
+            <div class="panel-head"><h3>Tvoje rychlé cviky</h3><span class="tag">base + import</span></div>
+            <p class="muted small">Přidal jsem kliky/variace, weighted push-ups, explosive věci a tvoje hlavní gym cviky. Import z Lyftu/CSV ti umí přidat vlastní presety.</p>
             <div id="exercisePresets" class="preset-grid"></div>
+          </section>
+        </div>
+
+        <div class="grid two">
+          <section class="panel glass">
+            <div class="panel-head"><h3>Custom cvik / preset</h3><span class="tag">manual</span></div>
+            <div class="form-grid">
+              <label>Název cviku<input id="customExerciseName" placeholder="Machine chest press, hammer curl..."></label>
+              <label>Poznámka<input id="customExerciseNote" placeholder="chest / back / cali / legs..."></label>
+            </div>
+            <button id="addCustomExerciseBtn" class="primary">Přidat preset</button>
+          </section>
+          <section class="panel glass">
+            <div class="panel-head"><h3>Lyftu / workout historie import</h3><span class="tag">CSV / JSON / TXT</span></div>
+            <p class="muted small">Nahraj export historie. Appka zkusí najít názvy cviků a vytvoří z nich presety. Když mi ten soubor hodíš sem do chatu, doladím parser i presety přesně podle tvých dat.</p>
+            <label class="file-label ghost full">Importovat workout historii<input id="workoutImportInput" type="file" accept=".csv,.json,.txt,.tsv,application/json,text/csv,text/plain"></label>
+            <div id="workoutImportReport" class="status-box">Čekám na soubor.</div>
           </section>
         </div>
 
@@ -331,6 +355,22 @@
             <div id="cloudStatus" class="status-box">Cloud není přihlášený.</div>
           </section>
         </div>
+        <section class="panel glass">
+          <div class="panel-head"><h3>Email reporty / backup</h3><span class="tag">mailto + webhook</span></div>
+          <p class="muted small">Samotný statický web neumí posílat email úplně sám bez služby. Tady máš bezpečný fallback přes mailto a cloud-ready webhook/Formspree/Supabase Edge Function pro automatické poslání reportu.</p>
+          <div class="form-grid">
+            <label>Email kam posílat<input id="reportEmail" type="email" placeholder="fifrysko11cz@gmail.com"></label>
+            <label>Webhook/Formspree endpoint<input id="emailWebhook" placeholder="https://formspree.io/f/... nebo edge function"></label>
+          </div>
+          <div class="button-row wrap">
+            <button id="saveEmailConfigBtn" class="ghost">Uložit email config</button>
+            <button id="mailtoDailyBtn" class="primary">Otevřít email report</button>
+            <button id="webhookDailyBtn" class="ghost">Poslat daily report webhookem</button>
+            <button id="webhookVaultBtn" class="ghost danger">Poslat encrypted vault webhookem</button>
+          </div>
+          <div id="emailStatus" class="status-box">Email není nastavený.</div>
+        </section>
+
         <section class="panel glass">
           <div class="panel-head"><h3>Supabase SQL setup</h3><span class="tag">copy</span></div>
           <pre class="code-block"><code>create table if not exists public.training_arc_vaults (
