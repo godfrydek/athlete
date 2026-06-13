@@ -1,4 +1,4 @@
-# Hosting Guide — Training Arc OS v10
+# Hosting Guide — Training Arc OS v11
 
 ## Cheapest setup
 
@@ -8,7 +8,7 @@
 
 ## Folder to upload
 
-Upload the entire `training_arc_os_v10` folder contents. Keep relative paths unchanged.
+Upload the entire `training_arc_os_v11` folder contents. Keep relative paths unchanged.
 
 ## Vercel quick path
 

@@ -1,4 +1,4 @@
-# Supabase Setup — Training Arc OS v10
+# Supabase Setup — Training Arc OS v11
 
 1. Create a Supabase project.
 2. Open SQL Editor.

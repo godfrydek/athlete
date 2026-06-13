@@ -1,6 +1,6 @@
 /* Training Arc OS v9 Ulti — additive upgrade layer. */
 (function(){
-  const V9_VERSION = 'v9 Ulti';
+  const V9_VERSION = 'legacy modules';
   const V9_VIEWS = [
     ['v9-coach','Coach Hub'],['v9-periodization','Program Builder'],['v9-sport','Sport Events'],['v9-injury','Injury Guard'],['v9-sleep','Sleep Lab'],['v9-pantry','Pantry'],['v9-owner','Owner Lab']
   ];
@@ -23,11 +23,11 @@
   }
 
   function patchBranding(){
-    document.title='Training Arc OS v10 Historic';
-    const meta=qs('meta[name="description"]'); if(meta) meta.content='Training Arc OS v10 Historic — private encrypted athlete life operating system.';
-    qsa('.sidebar-top span').forEach(x=>x.textContent='v9 Ulti');
-    qsa('.lock-card h1 span').forEach(x=>x.textContent='v9');
-    const side=qs('.lock-side .eyebrow'); if(side) side.textContent='v9 ulti upgrade';
+    document.title='Training Arc OS v11 Clean Deploy';
+    const meta=qs('meta[name="description"]'); if(meta) meta.content='Training Arc OS v11 Clean Deploy — private encrypted athlete life operating system.';
+    qsa('.sidebar-top span').forEach(x=>x.textContent='v11 Clean Deploy');
+    qsa('.lock-card h1 span').forEach(x=>x.textContent='v11');
+    const side=qs('.lock-side .eyebrow'); if(side) side.textContent='v11 clean deploy';
     const h2=qs('.lock-side h2'); if(h2) h2.textContent='Private Athlete Operating System';
     const lead=qs('.lock-card .lead'); if(lead) lead.textContent='All-in-one training arc: výživa, gym, běh, mobilita, eventy, deník, future-self, cloud sync a secure vault.';
   }
@@ -49,7 +49,7 @@
 
   function injectNav(){
     const nav=qs('#nav'); if(!nav || has('nav-v9-coach')) return;
-    const label=document.createElement('div'); label.className='v9-section-chip'; label.textContent='v9 Ulti'; nav.appendChild(label);
+    const label=document.createElement('div'); label.className='v9-section-chip'; label.textContent='Legacy tools'; nav.appendChild(label);
     V9_VIEWS.forEach(([view,label])=>{
       const b=document.createElement('button'); b.className='nav-btn'; b.dataset.view=view; b.id='nav-'+view; b.textContent=label; b.addEventListener('click',()=>switchView(view)); nav.appendChild(b);
     });
@@ -131,7 +131,7 @@
       };
       versionHistory.__v9=true;
     }
-    window.currentPatchNotes=function(){ return ['V10 Historic drží opravenou levou lištu: sticky sidebar, scroll, search, compact mode a mobile drawer.','Appka obsahuje Coach Hub, Program Builder, Sport Events, Injury Guard, Sleep Lab, Pantry a Owner Lab.','Projekt má separátní css/js/data soubory, aby byl připravenější na hosting a další refactor.','Nutrition pack je rozšířený o další food/recipe/performance varianty.','Branding je V10 Historic; další velký krok je hosting a cloud test.']; };
+    window.currentPatchNotes=function(){ return ['V11 Clean Deploy drží opravenou levou lištu: sticky sidebar, scroll, search, compact mode a mobile drawer.','Appka obsahuje Coach Hub, Program Builder, Sport Events, Injury Guard, Sleep Lab, Pantry a Owner Lab.','Projekt má separátní css/js/data soubory, aby byl připravenější na hosting a další refactor.','Nutrition pack je rozšířený o další food/recipe/performance varianty.','Branding je V11 Clean Deploy; další velký krok je root hosting test a cloud test.']; };
     window.renderVersionsPage=function(){
       if(!has('versionTimeline')) return;
       const foodCount=((state.foods||[]).length+(state.customFoods||[]).length);
@@ -144,7 +144,7 @@
       if(has('currentPatchNotes')) qs('#currentPatchNotes').innerHTML=currentPatchNotes().map(x=>`<div class="coach-tip">${clean(x)}</div>`).join('');
       if(has('versionHostingSteps')){ const steps=[['1','GitHub repo','Nahraj V9 soubory do repa.'],['2','Vercel / Netlify','Deploy static appku s HTTPS.'],['3','Supabase','Spusť SQL, nastav Auth/RLS a vlož anon key.'],['4','Multi-device test','PC create vault → push → mobil pull.'],['5','V10 later','Po hostingu řešit serverless, Stripe/email/AI endpoint.']]; qs('#versionHostingSteps').innerHTML=steps.map(s=>`<div class="version-step"><strong>${s[0]}</strong><h4>${clean(s[1])}</h4><p>${clean(s[2])}</p></div>`).join(''); }
     };
-    window.changelogText=function(){ return 'Training Arc OS v10 Historic — changelog\n\n' + versionHistory().map(r=>`${r.v} — ${r.title} [${r.tag}]\n`+r.items.map(x=>' - '+x).join('\n')).join('\n\n') + '\n\nCurrent V10 notes\n' + currentPatchNotes().map(x=>' - '+x).join('\n'); };
+    window.changelogText=function(){ return 'Training Arc OS v11 Clean Deploy — changelog\n\n' + versionHistory().map(r=>`${r.v} — ${r.title} [${r.tag}]\n`+r.items.map(x=>' - '+x).join('\n')).join('\n\n') + '\n\nCurrent V11 notes\n' + currentPatchNotes().map(x=>' - '+x).join('\n'); };
     window.exportChangelog=function(){ download('training_arc_os_v9_changelog.txt', window.changelogText(), 'text/plain'); };
   }
 

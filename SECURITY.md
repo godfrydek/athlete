@@ -1,4 +1,4 @@
-# Security Model — Training Arc OS v10
+# Security Model — Training Arc OS v11
 
 ## What is protected
 

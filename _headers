@@ -1,10 +1,10 @@
-/*
-  X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=()
-
-/index.html
+/athlete/index.html
   Cache-Control: no-cache, no-store, must-revalidate
-
-/sw.js
+/athlete/
+  Cache-Control: no-cache, no-store, must-revalidate
+/athlete/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+/athlete/css/v11-barfix.css
+  Cache-Control: no-cache, no-store, must-revalidate
+/athlete/js/v11-barfix.js
   Cache-Control: no-cache, no-store, must-revalidate

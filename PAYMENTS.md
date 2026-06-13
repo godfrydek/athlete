@@ -1,6 +1,6 @@
 # Payments / Free-Pro-Elite Blueprint
 
-V10 includes product and plan architecture, not real payments yet.
+V11 includes product and plan architecture, not real payments yet.
 
 ## Safe payment flow
 

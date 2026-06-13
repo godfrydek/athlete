@@ -1,8 +1,8 @@
 # Changelog
 
-## v10 Historic
+## v11 Clean Deploy
 
-- Added V10 Launchpad.
+- Added V11 Launchpad.
 - Added AI Coach Studio.
 - Added Season Roadmap.
 - Added Exercise Library.
@@ -10,9 +10,9 @@
 - Added Data Doctor.
 - Added Template Market.
 - Added Launch HQ.
-- Added V10 food, recipe, exercise/protocol and quote packs.
+- Added V11 food, recipe, exercise/protocol and quote packs.
 - Added docs and serverless API examples.
-- Updated manifest and service worker cache to v10.
+- Updated manifest and service worker cache to v11.
 - Prepared project structure for hosting and future monetization.
 
 ## v9 Ulti

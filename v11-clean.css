@@ -1,0 +1,9 @@
+/* Training Arc OS v11 Clean Deploy — root cache fix + final polish */
+:root{--v11-blue:#38bdf8;--v11-green:#22c55e;--v11-violet:#a78bfa;}
+.brand-mark{background:linear-gradient(135deg,var(--v11-blue),var(--v11-violet),var(--v11-green))!important;}
+.lock-card h1 span,.sidebar-top span,.version-badge strong{background:linear-gradient(135deg,var(--v11-blue),var(--v11-violet),var(--v11-green));-webkit-background-clip:text;background-clip:text;color:transparent!important;}
+.v11-cache-banner{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9999;width:min(760px,calc(100vw - 28px));border:1px solid rgba(56,189,248,.3);border-radius:22px;padding:12px 14px;background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(2,6,23,.92));box-shadow:0 28px 90px rgba(0,0,0,.38);display:flex;gap:12px;align-items:center;justify-content:space-between;color:var(--text);backdrop-filter:blur(18px)}
+.v11-cache-banner strong{color:var(--v11-blue)}.v11-cache-banner p{margin:0;color:var(--muted);font-size:.9rem}.v11-cache-banner .btn{padding:10px 13px}
+.v11-release-glow{box-shadow:0 0 0 1px rgba(56,189,248,.18),0 28px 90px rgba(56,189,248,.12)!important;}
+.release-card.current{border-color:rgba(56,189,248,.4)!important;background:linear-gradient(145deg,rgba(56,189,248,.12),rgba(167,139,250,.08),var(--panel2))!important}
+@media(max-width:680px){.v11-cache-banner{align-items:flex-start;flex-direction:column}.v11-cache-banner .button-row{width:100%}.v11-cache-banner .btn{flex:1}}

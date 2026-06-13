@@ -1,8 +1,8 @@
-/* Training Arc OS v10 Historic — additive milestone layer. */
+/* Training Arc OS v11 Clean Deploy — retained milestone layer. */
 (function(){
-  const V10_VERSION='v10 Historic';
+  const V10_VERSION='v11 Clean Deploy';
   const V10_VIEWS=[
-    ['v10-launchpad','V10 Launchpad'],
+    ['v10-launchpad','V11 Launchpad'],
     ['v10-ai','AI Coach Studio'],
     ['v10-roadmap','Season Roadmap'],
     ['v10-library','Exercise Library'],
@@ -29,19 +29,19 @@
   }
 
   function patchBranding(){
-    document.title='Training Arc OS v10 Historic';
-    const meta=qs('meta[name="description"]'); if(meta) meta.content='Training Arc OS v10 Historic — private encrypted athlete OS, nutrition, training, recovery, planning, AI coach studio, cloud sync and launch pack.';
-    qsa('.sidebar-top span').forEach(x=>x.textContent='v10 Historic');
-    qsa('.lock-card h1 span').forEach(x=>x.textContent='v10');
-    const side=qs('.lock-side .eyebrow'); if(side) side.textContent='v10 historic milestone';
+    document.title='Training Arc OS v11 Clean Deploy';
+    const meta=qs('meta[name="description"]'); if(meta) meta.content='Training Arc OS v11 Clean Deploy — private encrypted athlete OS, nutrition, training, recovery, planning, AI coach studio, cloud sync and launch pack.';
+    qsa('.sidebar-top span').forEach(x=>x.textContent='v11 Clean Deploy');
+    qsa('.lock-card h1 span').forEach(x=>x.textContent='v11');
+    const side=qs('.lock-side .eyebrow'); if(side) side.textContent='v11 clean deploy';
     const h2=qs('.lock-side h2'); if(h2) h2.textContent='Historic Private Athlete OS';
     const lead=qs('.lock-card .lead'); if(lead) lead.textContent='All-in-one training arc: výživa, gym, běh, recovery, life OS, AI coach studio, cloud sync, launch pack a secure vault.';
-    const badge=qs('.version-badge strong'); if(badge) badge.textContent='v10';
+    const badge=qs('.version-badge strong'); if(badge) badge.textContent='v11';
   }
 
   function injectNav(){
     const nav=qs('#nav'); if(!nav || has('nav-v10-launchpad')) return;
-    const label=document.createElement('div'); label.className='v10-section-chip'; label.textContent='v10 Historic'; nav.appendChild(label);
+    const label=document.createElement('div'); label.className='v10-section-chip'; label.textContent='v11 Clean Deploy'; nav.appendChild(label);
     V10_VIEWS.forEach(([view,label])=>{
       const b=document.createElement('button'); b.className='nav-btn'; b.dataset.view=view; b.id='nav-'+view; b.textContent=label; b.addEventListener('click',()=>switchView(view)); nav.appendChild(b);
     });
@@ -53,9 +53,9 @@
     if(!anchor || has('v10-launchpad')) return;
     anchor.insertAdjacentHTML('beforebegin', `
 <section id="v10-launchpad" class="view">
-  <article class="v10-hero glass"><div><p class="eyebrow">v10 historic milestone</p><h1>Ultimate Athlete OS <span>one private command center for training, nutrition, life and launch</span></h1><p class="lead">V10 je historický release: víc dat, víc plánů, AI prompts, launch systém, data doctor, share pack a production checklist. Offline funguje hned, cloud přes Supabase.</p><div class="button-row wrap"><button class="btn primary" onclick="v10GenerateDailyCommand()">Generate daily command</button><button class="btn ghost" onclick="v10QuickWin()">Quick win</button><button class="btn ghost" data-jump="v10-roadmap">Plan season</button><button class="btn ghost" data-jump="v10-launch">Launch HQ</button></div></div><div class="v10-crown"><span>historic</span><strong>v10</strong><small id="v10CrownLabel">ultimate build</small></div></article>
+  <article class="v10-hero glass"><div><p class="eyebrow">v11 clean deploy</p><h1>Ultimate Athlete OS <span>one private command center for training, nutrition, life and launch</span></h1><p class="lead">V11 je clean deploy/root-fix release: víc dat, víc plánů, AI prompts, launch systém, data doctor, share pack a production checklist. Offline funguje hned, cloud přes Supabase.</p><div class="button-row wrap"><button class="btn primary" onclick="v10GenerateDailyCommand()">Generate daily command</button><button class="btn ghost" onclick="v10QuickWin()">Quick win</button><button class="btn ghost" data-jump="v10-roadmap">Plan season</button><button class="btn ghost" data-jump="v10-launch">Launch HQ</button></div></div><div class="v10-crown"><span>historic</span><strong>v11</strong><small id="v10CrownLabel">clean deploy</small></div></article>
   <div class="grid cards-4"><article class="metric-card glass"><span>Food atlas</span><strong id="v10FoodCount">0</strong><small>presetů + custom</small></article><article class="metric-card glass"><span>Recipes</span><strong id="v10RecipeCount">0</strong><small>templates</small></article><article class="metric-card glass"><span>Modules</span><strong id="v10ModuleCount">0</strong><small>sekcí</small></article><article class="metric-card glass"><span>Vault score</span><strong id="v10VaultScore">0</strong><small>security/readiness</small></article></div>
-  <div class="grid two"><section class="panel glass accent-panel"><div class="panel-head"><h3>Daily command</h3><span class="tag">auto coach</span></div><div id="v10DailyCommand" class="coach-list"></div></section><section class="panel glass"><div class="panel-head"><h3>V10 stack</h3><span class="tag">new modules</span></div><div id="v10Stack" class="v10-grid"></div></section></div>
+  <div class="grid two"><section class="panel glass accent-panel"><div class="panel-head"><h3>Daily command</h3><span class="tag">auto coach</span></div><div id="v10DailyCommand" class="coach-list"></div></section><section class="panel glass"><div class="panel-head"><h3>V11 stack</h3><span class="tag">new modules</span></div><div id="v10Stack" class="v10-grid"></div></section></div>
   <section class="panel glass"><div class="panel-head"><h3>Historic release scorecard</h3><span class="tag">project health</span></div><div id="v10Scorecard" class="v10-grid"></div></section>
 </section>
 
@@ -122,7 +122,7 @@
 
   function migrateV10(){
     if(!state) return;
-    state.meta=state.meta||{}; state.meta.version=10; state.meta.label='v10 Historic';
+    state.meta=state.meta||{}; state.meta.version=10; state.meta.label='v11 Clean Deploy';
     state.v10={...(state.v10||{})};
     state.v10.promptTemplates=state.v10.promptTemplates||[];
     state.v10.seasons=state.v10.seasons||[];
@@ -306,21 +306,21 @@
 
   function renderLaunchHQ(){ if(!has('v10LaunchChecklist')) return; const list=state.v10.launchChecklist||[]; const done=list.filter(x=>x.done).length; const pct=list.length?Math.round(done/list.length*100):0; qs('#v10LaunchPercent').textContent=pct+'%'; qs('#v10LaunchChecklist').innerHTML=list.map(x=>`<div class="item ${x.done?'doneish':''}"><div class="item-head"><div><strong>${clean(x.title)}</strong><small>${clean(x.group)}</small><p>${clean(x.note)}</p></div><button class="btn tiny ${x.done?'ghost':'primary'}" onclick="v10ToggleLaunch('${x.id}')">${x.done?'Undo':'Done'}</button></div></div>`).join(''); renderArchitectureMap(); renderPaidBlueprint(); }
   function defaultLaunchChecklist(){ return [
-    {id:'repo',group:'hosting',title:'GitHub repo ready',note:'Upload v10 files, commit, clean README.'},{id:'deploy',group:'hosting',title:'Deploy static app',note:'Vercel/Netlify/GitHub Pages with HTTPS.'},{id:'supabase',group:'cloud',title:'Supabase SQL + Auth',note:'Run supabase.sql, use anon key only, test RLS.'},{id:'sync',group:'cloud',title:'PC/mobile sync test',note:'Create vault → push → pull on phone/tablet.'},{id:'backup',group:'security',title:'Encrypted backup exported',note:'Keep a backup before first public deploy.'},{id:'email',group:'serverless',title:'Email/webhook endpoint',note:'Use serverless function, not raw secrets in browser.'},{id:'payments',group:'paid',title:'Stripe/Paddle blueprint',note:'Checkout and webhooks via backend only.'},{id:'legal',group:'product',title:'Privacy/terms draft',note:'Explain data, export/delete, no medical claims.'},{id:'beta',group:'launch',title:'Beta test routine',note:'Test install, offline, sync, reset, backup, mobile UI.'},{id:'v10',group:'release',title:'V10 changelog published',note:'Versions page and docs updated.'}
+    {id:'repo',group:'hosting',title:'GitHub repo ready',note:'Upload v10 files, commit, clean README.'},{id:'deploy',group:'hosting',title:'Deploy static app',note:'Vercel/Netlify/GitHub Pages with HTTPS.'},{id:'supabase',group:'cloud',title:'Supabase SQL + Auth',note:'Run supabase.sql, use anon key only, test RLS.'},{id:'sync',group:'cloud',title:'PC/mobile sync test',note:'Create vault → push → pull on phone/tablet.'},{id:'backup',group:'security',title:'Encrypted backup exported',note:'Keep a backup before first public deploy.'},{id:'email',group:'serverless',title:'Email/webhook endpoint',note:'Use serverless function, not raw secrets in browser.'},{id:'payments',group:'paid',title:'Stripe/Paddle blueprint',note:'Checkout and webhooks via backend only.'},{id:'legal',group:'product',title:'Privacy/terms draft',note:'Explain data, export/delete, no medical claims.'},{id:'beta',group:'launch',title:'Beta test routine',note:'Test install, offline, sync, reset, backup, mobile UI.'},{id:'v10',group:'release',title:'V11 changelog published',note:'Versions page and docs updated.'}
   ]; }
   window.v10ToggleLaunch=function(id){ const item=state.v10.launchChecklist.find(x=>x.id===id); if(item)item.done=!item.done; saveVault(); };
   window.v10ToggleAllLaunch=function(done){ state.v10.launchChecklist.forEach(x=>x.done=done); saveVault(); };
   function renderArchitectureMap(){ if(!has('v10ArchitectureMap')) return; const steps=[['Frontend','Static app on Vercel/Netlify/GitHub Pages. No secret keys.'],['Vault','AES-GCM encrypted data in localStorage + encrypted cloud row.'],['Supabase','Auth + RLS table for encrypted vault per user.'],['Serverless later','Email reports, Stripe checkout, webhooks, AI endpoint.'],['Paid later','Plan stored after webhook; frontend gates are convenience only.']]; qs('#v10ArchitectureMap').innerHTML=steps.map((s,i)=>`<div class="v10-step"><strong>${i+1}</strong><div><h4>${clean(s[0])}</h4><p>${clean(s[1])}</p></div></div>`).join(''); }
   function renderPaidBlueprint(){ if(!has('v10PaidBlueprint')) return; const tiers=[['Free','Local vault, core logs, calculators, export/import.'],['Pro','Cloud sync, advanced analytics, template packs, email reports.'],['Elite','Coach share, team mode later, AI endpoint, premium programs.']]; qs('#v10PaidBlueprint').innerHTML=tiers.map(t=>`<div class="v10-card"><h3>${clean(t[0])}</h3><p>${clean(t[1])}</p></div>`).join(''); }
-  window.v10CopyLaunchPlan=async function(){ const txt=['Training Arc OS v10 launch plan',...defaultLaunchChecklist().map((x,i)=>`${i+1}. ${x.title} — ${x.note}`),'Important: never put Supabase service_role or Stripe secret key in frontend.'].join('\n'); await navigator.clipboard.writeText(txt); toast('Launch plan copied.'); };
+  window.v10CopyLaunchPlan=async function(){ const txt=['Training Arc OS v11 launch plan',...defaultLaunchChecklist().map((x,i)=>`${i+1}. ${x.title} — ${x.note}`),'Important: never put Supabase service_role or Stripe secret key in frontend.'].join('\n'); await navigator.clipboard.writeText(txt); toast('Launch plan copied.'); };
 
   function patchVersions(){
     if(typeof versionHistory==='function' && !versionHistory.__v10){
       const old=versionHistory;
-      versionHistory=function(){ const hist=old().filter(x=>x.v!=='v10'); hist.forEach(x=>{ if(x.tag==='current') x.tag='legacy'; }); hist.push({v:'v10',title:'Historic Ultimate Athlete OS',tag:'current',items:['Major milestone release after V9 with new V10 Launchpad and production structure','Added AI Coach Studio, Season Roadmap, Exercise Library, Coach Share, Data Doctor, Template Market and Launch HQ','Expanded data packs: mega food atlas, recipe templates, exercise/protocol library and quote pack','Added docs folder and serverless API examples for email, Stripe and AI endpoint architecture','Prepared project for real hosting, Supabase sync tests and future Free/Pro/Elite versions']}); return hist; };
+      versionHistory=function(){ const hist=old().filter(x=>x.v!=='v10'); hist.forEach(x=>{ if(x.tag==='current') x.tag='legacy'; }); hist.push({v:'v10',title:'Historic Ultimate Athlete OS',tag:'current',items:['Major milestone release after V9 with new V11 Launchpad and production structure','Added AI Coach Studio, Season Roadmap, Exercise Library, Coach Share, Data Doctor, Template Market and Launch HQ','Expanded data packs: mega food atlas, recipe templates, exercise/protocol library and quote pack','Added docs folder and serverless API examples for email, Stripe and AI endpoint architecture','Prepared project for real hosting, Supabase sync tests and future Free/Pro/Elite versions']}); return hist; };
       versionHistory.__v10=true;
     }
-    window.currentPatchNotes=function(){ return ['V10 Historic je největší milestone: z appky je private athlete OS + launch-ready projekt.','Nové moduly: Launchpad, AI Coach Studio, Season Roadmap, Exercise Library, Coach Share, Data Doctor, Template Market a Launch HQ.','Přidané data packy: V10 food atlas, recipe templates, exercise/protocol library a quote pack.','Přidané docs a api examples pro hosting, Supabase, security, payments, email a AI endpoint.','Reálné platby/email/AI secrets stále musí běžet přes backend/serverless — nikdy ne ve frontend souborech.']; };
+    window.currentPatchNotes=function(){ return ['V11 Clean Deploy je největší milestone: z appky je private athlete OS + launch-ready projekt.','Nové moduly: Launchpad, AI Coach Studio, Season Roadmap, Exercise Library, Coach Share, Data Doctor, Template Market a Launch HQ.','Přidané data packy: V11 food atlas, recipe templates, exercise/protocol library a quote pack.','Přidané docs a api examples pro hosting, Supabase, security, payments, email a AI endpoint.','Reálné platby/email/AI secrets stále musí běžet přes backend/serverless — nikdy ne ve frontend souborech.']; };
     window.renderVersionsPage=function(){
       if(!has('versionTimeline')) return;
       const foodCount=((state.foods||[]).length+(state.customFoods||[]).length); const recipeCount=((state.recipes||[]).length+(state.customRecipes||[]).length);
@@ -332,8 +332,8 @@
       if(has('currentPatchNotes')) qs('#currentPatchNotes').innerHTML=currentPatchNotes().map(x=>`<div class="coach-tip">${clean(x)}</div>`).join('');
       if(has('versionHostingSteps')){ const steps=[['1','Upload V10 to GitHub','Repo with docs, api examples and data packs.'],['2','Deploy static frontend','Vercel/Netlify/GitHub Pages, HTTPS and PWA.'],['3','Supabase project','Run SQL, Auth, RLS, anon key only.'],['4','Sync test','PC → push, mobile/tablet → pull, then backup.'],['5','Serverless later','Email reports, Stripe/Paddle and AI endpoint with secrets outside frontend.']]; qs('#versionHostingSteps').innerHTML=steps.map(s=>`<div class="version-step"><strong>${s[0]}</strong><h4>${clean(s[1])}</h4><p>${clean(s[2])}</p></div>`).join(''); }
     };
-    window.changelogText=function(){ return 'Training Arc OS v10 Historic — changelog\n\n'+versionHistory().map(r=>`${r.v} — ${r.title} [${r.tag}]\n`+r.items.map(x=>' - '+x).join('\n')).join('\n\n')+'\n\nCurrent V10 notes\n'+currentPatchNotes().map(x=>' - '+x).join('\n'); };
-    window.exportChangelog=function(){ download('training_arc_os_v10_changelog.txt',window.changelogText(),'text/plain'); };
+    window.changelogText=function(){ return 'Training Arc OS v11 Clean Deploy — changelog\n\n'+versionHistory().map(r=>`${r.v} — ${r.title} [${r.tag}]\n`+r.items.map(x=>' - '+x).join('\n')).join('\n\n')+'\n\nCurrent V11 notes\n'+currentPatchNotes().map(x=>' - '+x).join('\n'); };
+    window.exportChangelog=function(){ download('training_arc_os_v11_changelog.txt',window.changelogText(),'text/plain'); };
   }
   function updateVersionsV10Patch(){ if(has('versionTimeline') && typeof renderVersionsPage==='function') renderVersionsPage(); }
   function bindUi(){ document.addEventListener('input',e=>{ if(e.target && e.target.id==='v10ExerciseSearch') renderLibrary(); }); }
