@@ -4,12 +4,16 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#050711" />
-  <meta name="description" content="Training Arc OS v8 — secure private all-in-one training, nutrition and life tracker." />
-  <title>Training Arc OS v8</title>
+  <meta name="description" content="Training Arc OS v9 Ulti — secure private all-in-one athlete, nutrition, recovery, planning and life OS." />
+  <title>Training Arc OS v9 Ulti</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="css/v9-ulti.css" />
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="app.js"></script>
+  <script defer src="data/v9-foods.js"></script>
+  <script defer src="data/v9-recipes.js"></script>
+  <script defer src="js/v9-addon.js"></script>
 </head>
 <body>
   <div class="aurora aurora-a"></div>
@@ -23,7 +27,7 @@
           <div class="brand-mark">TA</div>
           <div>
             <p class="eyebrow">encrypted private vault</p>
-            <h1>Training Arc OS <span>v7</span></h1>
+            <h1>Training Arc OS <span>v9</span></h1>
           </div>
         </div>
         <p class="lead">All-in-one training arc: kalorie, gym, běh, životní deník, knihy, grafy, cloud sync a secure backup.</p>
@@ -41,14 +45,14 @@
           <button id="offlineUnsafeBtn" class="btn ghost subtle">Dočasně bez vaultu</button>
           <button id="resetVaultBtn" class="btn danger ghost">Reset lokálu</button>
         </div>
-        <p class="small muted">Lokální data jsou šifrovaná AES-GCM. Cloud sync posílá šifrovaný vault; Supabase klíče nastavíš později v Connection Hubu.</p>
+        <p class="small muted">Lokální data jsou šifrovaná AES-GCM. Cloud sync posílá šifrovaný vault; Supabase klíče nastavíš později v Connectionsu.</p>
       </article>
 
       <aside class="glass lock-side">
-        <p class="eyebrow">v8 fire upgrade</p>
+        <p class="eyebrow">v9 ulti upgrade</p>
         <h2>Premium Life + Training OS</h2>
         <ul class="feature-list">
-          <li>9000+ food presetů + custom fotky</li>
+          <li>12000+ food presetů + custom fotky</li>
           <li>Supabase login/sync pro mobil/tablet/PC</li>
           <li>Email/webhook reporty a encrypted backup</li>
           <li>Gym presets, běžecké typy, PR, kalkulačky</li>
@@ -64,7 +68,7 @@
         <div class="brand-mark mini">TA</div>
         <div>
           <strong>Training Arc OS</strong>
-          <span>v8 Fire</span>
+          <span>v9 Ulti</span>
         </div>
       </div>
       <nav class="nav" id="nav">
@@ -81,13 +85,13 @@
         <button class="nav-btn" data-view="mealplan">Meal Plan</button>
         <button class="nav-btn" data-view="body">Body & Recovery</button>
         <button class="nav-btn" data-view="quests">Quests</button>
-        <button class="nav-btn" data-view="performance">Performance Lab</button>
+        <button class="nav-btn" data-view="performance">Performance</button>
         <button class="nav-btn" data-view="motivation">Motivation</button>
-        <button class="nav-btn" data-view="athlete">Athlete Toolkit</button>
+        <button class="nav-btn" data-view="athlete">Athlete Kit</button>
         <button class="nav-btn" data-view="plans">Plans</button>
         <button class="nav-btn" data-view="hosting">Hosting Lab</button>
         <button class="nav-btn" data-view="analytics">Analytics</button>
-        <button class="nav-btn" data-view="connections">Connection Hub</button>
+        <button class="nav-btn" data-view="connections">Connections</button>
         <button class="nav-btn" data-view="versions">Versions</button>
       </nav>
       <div class="sidebar-bottom">
@@ -127,7 +131,7 @@
                 <button class="btn ghost" data-jump="recovery">Stretch</button>
                 <button class="btn ghost" data-jump="mealplan">Meal plan</button>
                 <button class="btn ghost" data-jump="quests">Quest board</button>
-                <button class="btn ghost" data-jump="versions">v7 changelog</button>
+                <button class="btn ghost" data-jump="versions">v9 changelog</button>
               </div>
             </div>
             <div class="ring-wrap">
@@ -495,8 +499,8 @@
       <section id="performance" class="view">
         <div class="v8-hero glass">
           <div>
-            <p class="eyebrow">v8 athlete intelligence</p>
-            <h1>Performance Lab <span>readiness · periodization · race day</span></h1>
+            <p class="eyebrow">v9 athlete intelligence</p>
+            <h1>Performance <span>readiness · periodization · race day</span></h1>
             <p class="lead">Rychlý coach cockpit pro rozhodování: kdy tlačit, kdy dát easy, co jet tento týden a jak nepřepálit hybrid grind.</p>
           </div>
           <div id="v8Readiness" class="readiness-card">—</div>
@@ -571,7 +575,7 @@
 
       <section id="athlete" class="view">
         <div class="v8-hero glass">
-          <div><p class="eyebrow">complete athlete toolbox</p><h1>Athlete Toolkit <span>protocols · gear · skills</span></h1><p class="lead">Všechno co sportovec řeší kolem výkonu: warm-up, mobility, recovery, vybavení, suplementy, skills, taper a checklisty.</p></div>
+          <div><p class="eyebrow">complete athlete toolbox</p><h1>Athlete Kit <span>protocols · gear · skills</span></h1><p class="lead">Všechno co sportovec řeší kolem výkonu: warm-up, mobility, recovery, vybavení, suplementy, skills, taper a checklisty.</p></div>
           <div class="toolkit-badge">OS</div>
         </div>
         <div class="grid two">
@@ -629,8 +633,8 @@
         <div class="version-hero glass">
           <div>
             <p class="eyebrow">release history · current build</p>
-            <h1>Training Arc OS <span>v8 Fire</span></h1>
-            <p class="lead">V8 Fire je aktuální mega build před hostingem/v10. Tahle podstránka drží historii updatů, hosting checklist a quick changelog, ať víš, co je v appce hotové.</p>
+            <h1>Training Arc OS <span>v9 Ulti</span></h1>
+            <p class="lead">V9 Ulti je aktuální mega build před hostingem/v10. Tahle podstránka drží historii updatů, hosting checklist a quick changelog, ať víš, co je v appce hotové.</p>
             <div class="button-row wrap">
               <button id="copyChangelogBtn" class="btn primary">Copy changelog</button>
               <button id="exportChangelogBtn" class="btn ghost">Export changelog .txt</button>
@@ -640,7 +644,7 @@
           </div>
           <div class="version-badge">
             <span>current</span>
-            <strong>v8</strong>
+            <strong>v9</strong>
             <small>Fire · athlete-ready</small>
           </div>
         </div>
@@ -654,11 +658,11 @@
 
         <div class="grid two">
           <section class="panel glass accent-panel">
-            <div class="panel-head"><h3>Update timeline</h3><span class="tag">v1 → v8</span></div>
+            <div class="panel-head"><h3>Update timeline</h3><span class="tag">v1 → v9</span></div>
             <div id="versionTimeline" class="version-timeline"></div>
           </section>
           <section class="panel glass">
-            <div class="panel-head"><h3>v8 current patch notes</h3><span class="tag">mega build</span></div>
+            <div class="panel-head"><h3>v9 current patch notes</h3><span class="tag">mega build</span></div>
             <div id="currentPatchNotes" class="coach-list"></div>
             <div class="glowline"></div>
             <p class="small muted">Poznámka: nutriční data v presetech jsou orientační. Etiketa / vlastní vážení má přednost. Security model je local-first encrypted vault + volitelný Supabase sync.</p>
@@ -666,7 +670,7 @@
         </div>
 
         <section class="panel glass">
-          <div class="panel-head"><h3>Hosting next steps</h3><span class="tag">after v8</span></div>
+          <div class="panel-head"><h3>Hosting next steps</h3><span class="tag">after v9</span></div>
           <div id="versionHostingSteps" class="version-step-grid"></div>
         </section>
       </section>

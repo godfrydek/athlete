@@ -1,5 +1,9 @@
-const CACHE = 'training-arc-os-v8-cache-v1';
-const ASSETS = ['./','./index.html','./style.css','./app.js','./manifest.json'];
+const CACHE = 'training-arc-os-v9-ulti-cache-v1';
+const ASSETS = [
+  './','./index.html','./style.css','./app.js','./manifest.json','./sw.js',
+  './css/v9-ulti.css','./js/v9-addon.js','./data/v9-foods.js','./data/v9-recipes.js',
+  './README.md','./supabase.sql'
+];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(()=>self.skipWaiting()));
 });

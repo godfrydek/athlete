@@ -1,88 +1,83 @@
-# Training Arc OS v8 Fire
+# Training Arc OS v9 Ulti
 
-Private local-first all-in-one athlete web appka pro training arc: nutrition, gym, běh, recepty, planner, recovery, motivation, performance lab, athlete toolkit, paid-version planning, cloud sync a secure vault.
+Private all-in-one athlete + life operating system. V9 is the big pre-hosting refactor/update.
 
-## Co je nové ve v8 Fire
+## What is inside
 
-- **Performance Lab**
-  - readiness score podle spánku, mood, energie, soreness a tréninkové zátěže
-  - weekly periodization generator podle cíle
-  - race/event checklist
-  - hybrid interference advisor pro gym × běh
-  - pre-session intention log
+- `index.html` — app shell and all original modules
+- `style.css` — base UI from previous builds
+- `app.js` — core local-first app logic
+- `css/v9-ulti.css` — V9 premium polish + fixed sidebar/responsive layout
+- `js/v9-addon.js` — V9 modules and patch layer
+- `data/v9-foods.js` — extra food pack generator
+- `data/v9-recipes.js` — extra recipe pack generator
+- `manifest.json` + `sw.js` — PWA/cache base
+- `supabase.sql` — cloud sync table/RLS setup
 
-- **Motivation Vault**
-  - random quote engine
-  - vlastní citáty
-  - identity rules
-  - discipline contracts
-  - bad-day protocol
+## V9 headline changes
 
-- **Athlete Toolkit**
-  - protocol generator: calves/shins, sore upper, low sleep, cold/easy mode, pre-race, post-long-run
-  - skill progressions: clean muscle-up, 50+ push-ups, 10 km sub 60, 1 km sub 3:30, pull-up power, running base
-  - gear/supplement inventory
-  - sport checklist templates
+### Fixed sidebar
 
-- **Plans & Monetization Lab**
-  - Free / Pro Athlete / Elite OS plan architecture
-  - pricing plan notes
-  - Stripe/serverless rollout checklist
-  - local plan simulation
-  - reálné platby nejsou v čistém frontend buildu aktivní; musí se řešit přes backend/serverless kvůli secret keys
+The old left bar was too crowded and broke especially on narrower screens. V9 adds:
 
-- **Nutrition expansion**
-  - v8 food expansion navazuje na v7, cílí na cca 9000+ orientačních presetů podle migrace a de-dupu
-  - 300+ generovaných recipe/performance templates
-  - pořád platí: etiketa obalu a vlastní vážení mají přednost
+- sticky desktop sidebar with real internal scrolling
+- nav search with `/` keyboard shortcut
+- compact sidebar mode
+- mobile drawer with backdrop
+- fixed media query conflicts from older versions
+- better topbar and module spacing
 
-- **Zachováno z v7**
-  - secure AES-GCM vault
-  - Supabase cloud sync
-  - email/webhook backup
-  - recipes, weekly meal planner, grocery list, spending tracker
-  - planner/timeable, Future Self, recovery routines
-  - body vault, progress photos, quests, achievements
-  - versions/updates stránka
-  - PWA základ
+### New V9 modules
 
-## Spuštění
+- Coach Hub — readiness, weekly review, red flags, AI prompt copy
+- Program Builder — hybrid gym/run training block generator
+- Sport Events — races, time trials, school/police tests, benchmarks
+- Injury Guard — pain/symptom log and risk rules
+- Sleep Lab — sleep logs, caffeine cutoff, recovery advice
+- Pantry — stock tracking and grocery draft
+- Owner Lab — free/pro/elite architecture and hosting-to-paid checklist
 
-Rozbal ZIP a otevři `index.html` v prohlížeči.
+### Expanded data
 
-Pro nejlepší používání na PC/mobilu/tabletu nahraj složku na GitHub Pages, Netlify nebo Vercel a zapni Supabase sync.
+- Existing V8 data stays included
+- V9 adds another generated performance food pack
+- V9 adds more recipe/performance templates
+- More exercise/run presets are added during migration
 
-## Security model
+## Running locally
 
-- Lokální vault je šifrovaný přes WebCrypto AES-GCM.
-- Vault heslo/PIN se neposílá do cloudu.
-- Supabase sync posílá jen encrypted vault blob.
-- Do browseru patří pouze Supabase anon/publishable key, nikdy service_role key.
-- Plain JSON export používej jen pro debug, protože není šifrovaný.
+Unzip and open:
 
-## Cloud sync
+```txt
+index.html
+```
 
-1. Vytvoř Supabase projekt.
-2. Spusť `supabase.sql` v SQL editoru.
-3. Nahraj appku na hosting.
-4. V Connection Hubu zadej Supabase URL + anon/publishable key.
-5. Udělej sign up / sign in.
-6. Push vault z jednoho zařízení, pull vault na druhém.
+For best testing, run a tiny local server:
 
-## Paid versions later
+```bash
+python -m http.server 8080
+```
 
-V8 obsahuje **Plans & Monetization Lab**, ale skutečné platby je potřeba udělat až po hostingu přes bezpečný backend/serverless:
+Then open `http://localhost:8080`.
 
-- Stripe/Paddle Checkout endpoint
-- webhook, který ověří payment
-- uložení planu k userovi v Supabase
-- feature gates podle server-trusted planu
-- nikdy nedávat Stripe secret key do browseru
+## Hosting plan
 
-## Event reminders
+Recommended cheapest stack:
 
-Static web app neumí garantovat background připomínky, když je zavřená. Appka má `.ics` export a browser notifications pro otevřenou appku; reálné push notifikace později potřebují server/service worker push setup.
+1. GitHub repo
+2. Vercel or Netlify for static hosting
+3. Supabase Free for Auth + encrypted vault sync
+4. Later: serverless function for Stripe/email/AI endpoint
 
-## Poznámka k jídlu a coach tipům
+## Security notes
 
-Food databáze, recepty, readiness a coach tipy jsou orientační nástroje pro vlastní deník. U potravin používej hodnoty z etikety. U zdravotních problémů, bolesti, nemoci, trombózy apod. řeš rozhodnutí s lékařem.
+- Local vault uses browser WebCrypto through the core app.
+- Cloud sync is designed to send encrypted vault data.
+- Use only Supabase anon/publishable key in the browser.
+- Never put Supabase service role key, Stripe secret key, or any private backend secret inside frontend files.
+
+## Version
+
+Branding: **Training Arc OS v9 Ulti**.
+
+Next big milestone can be V10 after hosting/cloud is working on PC + mobile + tablet.
