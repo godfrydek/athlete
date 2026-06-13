@@ -1,4 +1,4 @@
-const CACHE = 'training-arc-os-v5-cache-v1';
+const CACHE = 'training-arc-os-v7-cache-v2';
 const ASSETS = ['./','./index.html','./style.css','./app.js','./manifest.json'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(()=>self.skipWaiting()));

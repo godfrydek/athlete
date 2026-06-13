@@ -1,103 +1,53 @@
-# Training Arc OS v5 Supreme
+# Training Arc OS v6 Titan
 
-Soukromá all-in-one web appka pro fitness + life tracking. Funguje jako obyčejný statický web: otevři `index.html`, nastav vault heslo a jedeš.
+Private local-first all-in-one web appka pro training arc: nutrition, gym, běh, recepty, planner, recovery, future-self, deník, grafy, cloud sync a secure vault.
 
-## Co je ve v5 nové
+## Co je nové ve v6
 
-- Premium redesign: lepší dashboard, glass UI, Command palette, responsive mobile/tablet/PC layout.
-- Secure vault: WebCrypto AES-GCM + PBKDF2, lokální data nejsou v localStorage čitelná jako plain text.
-- Supabase cloud sync: login přes email/password a push/pull šifrovaného vaultu mezi mobilem, tabletem a PC.
-- 1000+ food presetů generovaných z kategorií jídel + variant. Ber jako orientační databázi, etiketa má vždy přednost.
-- Food calculator: údaje na 100 g → vlastní porce, custom food databáze, fotky jídel, meal builder.
-- Gym: presety podle tebe, weighted/explosive kliky, pull-ups, dips, rows, legs, import z Lyfto/CSV/JSON/TXT.
-- Běh: typy běhů, run log, weekly km, PR estimates, pace.
-- Kalkulačky: e1RM/RIR, VO2max estimate, BMI/TDEE, pace/race predictor, makra, long-run fuel.
-- Life OS: deník, mood, habits/streak, chorey/tasky, knihy/reading arc.
-- Email/webhook reports: daily report přes mailto, webhook backup/report, encrypted vault export.
-- PWA základ: `manifest.json` + `sw.js`.
+- Recipes sekce: preset recepty, custom recepty, ingredience, postup, přidání receptu do dne nebo meal builderu.
+- Větší food databáze: 2000+ orientačních food presetů. Etiketa obalu má vždy přednost.
+- Planner / timeable events: eventy s časem, typem, poznámkou, done stavem, quick plan dne a export do `.ics` pro kalendář.
+- MyFutureSelf: dopisy do budoucna, goals/milestones, identity stack.
+- Recovery: stretching/mobility routines pro běh, upper, lower, calisthenics, sleep a desk reset + stretch log.
+- Vylepšené UI cards pro nové sekce.
+- Zachovaný v5 secure vault, Supabase cloud sync, email/webhook backup, PWA základ.
 
-## Rychlé spuštění
+## Spuštění
 
-1. Rozbal ZIP.
-2. Otevři `index.html` v prohlížeči.
-3. Nastav vault heslo / PIN. Doporučení: raději věta než 4 čísla.
-4. Začni logovat.
+Rozbal ZIP a otevři `index.html` v prohlížeči. Pro nejlepší cloud/PWA používání nahraj složku na GitHub Pages, Netlify nebo Vercel.
 
-Pro mobil/tablet/PC sync je nejlepší to hodit na GitHub Pages, Netlify nebo Vercel a nastavit Supabase níže.
+## Security model
 
-## Supabase cloud sync
+- Lokální vault je šifrovaný přes WebCrypto AES-GCM.
+- Heslo/PIN se nepřenáší do cloudu.
+- Supabase sync posílá jen encrypted vault blob.
+- Do browseru patří pouze Supabase anon/publishable key, nikdy service_role key.
+- Plain JSON export používej jen pro debug, protože není šifrovaný.
 
-V5 ukládá do cloudu jen šifrovaný vault. Supabase neuvidí tvoje jídla, deník ani tréninky v plain textu, pokud je sám nevyexportuješ jako plain JSON.
+## Cloud sync
 
-### 1. Vytvoř Supabase projekt
+1. Vytvoř Supabase projekt.
+2. Spusť `supabase.sql` v SQL editoru.
+3. Nahraj appku na hosting.
+4. V Connection Hubu zadej Supabase URL + anon/publishable key.
+5. Udělej sign up / sign in.
+6. Push vault z jednoho zařízení, pull vault na druhém.
 
-- V Supabase vytvoř nový projekt.
-- Zapni Auth → Email provider.
-- Vezmi Project URL a anon/publishable key.
+## Event reminders
 
-### 2. Spusť SQL
+Static web app neumí garantovat background připomínky, když je zavřená. Proto v6 přidává:
 
-V Supabase SQL editoru spusť obsah souboru `supabase.sql`.
+- Browser notification permission pro otevřenou appku.
+- `.ics` export, který si můžeš importovat do Google/Apple kalendáře.
+- Webhook/email backup z Connection Hubu.
 
-Tabulka:
+## Poznámka k jídlu
 
-```sql
-public.training_arc_vaults
-```
+Food databáze a recepty jsou orientační pro rychlé logování. U balených potravin používej hodnoty z etikety.
 
-RLS policies dovolí číst/zapisovat jen řádek, kde `auth.uid() = user_id`.
 
-### 3. Nastav v appce
+## v7 patch — Versions / Updates page
 
-V appce otevři **Connection Hub**:
+Pomyslná verze pořád zůstává **v7 Lucky Number**. Tento patch jen přidává podstránku **Versions / Updates**, quick changelog export/copy, lepší topbar názvy nových modulů a rychlé odkazy na Hosting Lab / Connection Hub.
 
-- vlož Supabase URL
-- vlož anon/publishable key
-- zadej email + cloud password
-- Sign up / Sign in
-- Push vault
-
-Na druhém zařízení:
-
-- otevři hosted appku
-- vytvoř/odemkni vault stejným vault heslem
-- Sign in
-- Pull vault
-
-## Security poznámky
-
-- Vault heslo je klíč k dešifrování. Když ho zapomeneš, data nejdou obnovit.
-- Pro cloud nepoužívej service_role key v prohlížeči. Používej jen anon/publishable key a RLS.
-- Plain export používej jen pro debug, ne jako běžný backup.
-- Email backup raději posílej encrypted vault, ne plain JSON.
-- Obrázky jídel se komprimují a ukládají do vaultu jako base64; hodně fotek zvětší localStorage/cloud payload.
-
-## Email/webhook
-
-Bez backendu nejde přímo a bezpečně posílat email z čistého HTML. V5 proto nabízí:
-
-- `mailto:` daily report — otevře email klienta s hotovým textem.
-- Webhook URL — použij Formspree, Make, n8n, Zapier nebo vlastní endpoint.
-- Encrypted vault webhook — pošle JSON se šifrovaným vaultem.
-
-## Import Lyfto/workout historie
-
-V sekci Gym nahraj CSV/JSON/TXT/TSV. Appka zkusí vytáhnout názvy cviků a přidat je do presetů.
-
-Pro nejlepší presety mi klidně pošli export sem do chatu a já ti vytvořím přesnější `exercisePresets` podle reálné historie.
-
-## Limitace v5
-
-- Food presety jsou orientační, ne certifikovaná databáze potravin.
-- Cloud konflikty zatím řeší ručně přes Push/Pull, ne automatický merge.
-- AI coach je pravidlový, ne skutečný online AI model.
-- Supabase CDN musí být dostupné pro cloud funkce. Offline appka bez cloudu funguje dál.
-
-## Doporučený další v6 směr
-
-- Full hosted deployment na Vercel/Netlify.
-- Automatický conflict-safe sync.
-- Supabase Storage pro fotky jídel.
-- Reálná AI přes serverless endpoint.
-- OCR etikety jídla z fotky.
-- Strava/Google Fit import, pokud se rozhodneš pro API napojení.
+Další krok: hosting přes GitHub + Vercel/Netlify + Supabase Free.

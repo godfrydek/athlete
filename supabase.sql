@@ -1,4 +1,4 @@
--- Training Arc OS v5 Supabase setup
+-- Training Arc OS v7 Supabase setup
 -- Run in Supabase SQL editor.
 -- Stores ONLY encrypted vault JSON. The client never uploads decrypted data unless you intentionally change the app.
 
@@ -38,4 +38,4 @@ create index if not exists training_arc_vaults_updated_at_idx on public.training
 -- Optional: if you later add Supabase Storage food photos instead of storing compressed base64 in the vault:
 -- 1) Create a private bucket named training-arc-food-images
 -- 2) Add storage policies limiting object access to auth.uid() folders
--- Current v5 stores food images inside encrypted vault for simplicity.
+-- Current v7 stores food images inside encrypted vault for simplicity.
