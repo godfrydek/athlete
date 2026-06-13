@@ -1,7 +1,7 @@
-/* Training Arc OS v9 Ulti — local-first encrypted all-in-one tracker */
-const APP_KEY = "training_arc_os_v9_vault";
-const SETTINGS_KEY = "training_arc_os_v9_settings";
-const LEGACY_KEYS = ["training_arc_os_v8_vault","training_arc_os_v7_vault","training_arc_os_v6_vault","training_arc_os_v5_vault","training_arc_os_v4_vault","training_arc_os_v3_vault","training_arc_os_v2_vault"];
+/* Training Arc OS v10 Historic — local-first encrypted all-in-one tracker */
+const APP_KEY = "training_arc_os_v10_vault";
+const SETTINGS_KEY = "training_arc_os_v10_settings";
+const LEGACY_KEYS = ["training_arc_os_v9_vault","training_arc_os_v8_vault","training_arc_os_v7_vault","training_arc_os_v6_vault","training_arc_os_v5_vault","training_arc_os_v4_vault","training_arc_os_v3_vault","training_arc_os_v2_vault"];
 const $ = id => document.getElementById(id);
 const $$ = sel => [...document.querySelectorAll(sel)];
 const todayIso = () => new Date().toISOString().slice(0,10);
@@ -51,7 +51,7 @@ const COMMANDS = [
 
 function seedState(){
   return {
-    meta:{app:"Training Arc OS", version:8, createdAt:new Date().toISOString(), deviceId: uid()},
+    meta:{app:"Training Arc OS", version:10, label:"v10 Historic", createdAt:new Date().toISOString(), deviceId: uid()},
     profile:{name:"Filip", height:182, weight:80, age:17, sex:"male"},
     targets:{...DEFAULT_TARGETS},
     days:{}, foods: generateFoodDatabase(), customFoods:[], recipes:defaultRecipes(), customRecipes:[], events:[], stretchLogs:[], futureLetters:[], goals:[], mealPlans:[], groceryItems:[], spendLogs:[], measurements:[], bodyRecovery:[], progressPhotos:[], quests:[], weeklyReviews:[], workouts:[], runs:[], journals:[], tasks:[], habits:[], books:[], exercisePresets:[...EXERCISE_PRESETS],
@@ -66,7 +66,7 @@ function demoState(){
   s.runs.push({id:uid(),date:daysAgo(1),type:"Long run",distance:7.8,seconds:3110,hr:167,rpe:6,terrain:"vítr + kopečky",notes:"rýma, mikina"});
   s.workouts.push({id:uid(),date:daysAgo(6),type:"Upper",notes:"demo",exercises:[{name:"Incline bench press",sets:[{kg:78,reps:7,rir:1},{kg:75,reps:8,rir:2}]},{name:"MAG lat pulldown",sets:[{kg:80,reps:8,rir:1}]}]});
   s.workouts.push({id:uid(),date:daysAgo(2),type:"Calisthenics",notes:"demo",exercises:[{name:"Weighted push-ups +20 kg",sets:[{kg:20,reps:12,rir:2}]},{name:"Explosive pull-ups",sets:[{kg:0,reps:8,rir:1}]},{name:"Explosive dips",sets:[{kg:0,reps:12,rir:1}]}]});
-  s.journals.push({id:uid(),date:todayIso(),mood:"🔥 locked in",score:8,text:"V7 demo: všechno logovat, nic neplatit."});
+  s.journals.push({id:uid(),date:todayIso(),mood:"🔥 locked in",score:8,text:"V10 demo: všechno logovat, nic neplatit."});
   s.books.push({id:uid(),title:"Atomic Habits",author:"James Clear",total:320,current:84,note:"Systems > goals"});
   s.events.push({id:uid(),date:todayIso(),time:"20:30",type:"Recovery",title:"10 min mobility",notes:"hips + calves",done:false});
   s.futureLetters.push({id:uid(),title:"Summer arc",unlockDate:daysAgo(-30),text:"Budeš rád, že jsi začal logovat všechno. Keep stacking days.",createdAt:new Date().toISOString(),opened:false});
@@ -79,8 +79,8 @@ function ensureDay(iso=selectedDate){
   return state.days[iso];
 }
 function migrate(){
-  if(!state.meta) state.meta={app:"Training Arc OS", version:8, createdAt:new Date().toISOString(), deviceId:uid()};
-  state.meta.version=8;
+  if(!state.meta) state.meta={app:"Training Arc OS", version:10, label:"v10 Historic", createdAt:new Date().toISOString(), deviceId:uid()};
+  state.meta.version=10; state.meta.label="v10 Historic";
   state.targets={...DEFAULT_TARGETS,...(state.targets||{})};
   state.settings={theme:"dark",cloud:{url:"",key:"",lastPush:"",lastPull:""},email:{reportEmail:"",webhookUrl:""},security:{kdfIterations:300000},planner:{notify:false},...(state.settings||{})};
   state.settings.cloud={url:"",key:"",lastPush:"",lastPull:"",...(state.settings.cloud||{})};
@@ -130,7 +130,7 @@ async function encryptState(payload, password){
   const salt=crypto.getRandomValues(new Uint8Array(16)); const iv=crypto.getRandomValues(new Uint8Array(12)); const iterations=state?.settings?.security?.kdfIterations||300000;
   const key=await deriveKey(password,salt,iterations);
   const data=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,enc.encode(JSON.stringify(payload)));
-  return {app:"TrainingArcOS",version:8,kdf:"PBKDF2-SHA256",iterations,cipher:"AES-GCM-256",salt:bytesToB64(salt),iv:bytesToB64(iv),data:bytesToB64(data),updatedAt:new Date().toISOString(),deviceId:payload?.meta?.deviceId||"unknown"};
+  return {app:"TrainingArcOS",version:10,kdf:"PBKDF2-SHA256",iterations,cipher:"AES-GCM-256",salt:bytesToB64(salt),iv:bytesToB64(iv),data:bytesToB64(data),updatedAt:new Date().toISOString(),deviceId:payload?.meta?.deviceId||"unknown"};
 }
 async function decryptVault(vault,password){
   const key=await deriveKey(password,b64ToBytes(vault.salt),vault.iterations||220000);
@@ -174,10 +174,10 @@ function hydrateControls(){
 function bindEvents(){
   $("vaultPassword").addEventListener("input",updatePasswordMeter);
   $("unlockBtn").onclick=async()=>{ const pass=$("vaultPassword").value; if(!pass||pass.length<4)return toast("Zadej heslo/PIN."); try{ const vault=getStoredVault(); if(!vault)return toast("Vault neexistuje. Vytvoř nový."); state=await decryptVault(vault,pass); vaultPassword=pass; unsafeMode=false; openApp(); toast("Odemčeno."); }catch(e){ toast("Špatné heslo/PIN nebo poškozený vault."); }};
-  $("createVaultBtn").onclick=async()=>{ const pass=$("vaultPassword").value; if(!pass||pass.length<6)return toast("Pro v9 dej aspoň 6 znaků."); if(getStoredVault()&&!confirm("Přepsat existující vault?"))return; state=seedState(); vaultPassword=pass; unsafeMode=false; await saveVault(false); openApp(); toast("V9 secure vault vytvořen."); };
+  $("createVaultBtn").onclick=async()=>{ const pass=$("vaultPassword").value; if(!pass||pass.length<6)return toast("Pro v10 dej aspoň 6 znaků."); if(getStoredVault()&&!confirm("Přepsat existující vault?"))return; state=seedState(); vaultPassword=pass; unsafeMode=false; await saveVault(false); openApp(); toast("V10 secure vault vytvořen."); };
   $("demoVaultBtn").onclick=async()=>{ const pass=$("vaultPassword").value||"demo1234"; state=demoState(); vaultPassword=pass; unsafeMode=false; await saveVault(false); openApp(); toast("Demo vault vytvořen. Heslo: co jsi zadal, nebo demo1234."); };
   $("offlineUnsafeBtn").onclick=()=>{ if(!confirm("Dočasný režim bez šifrování? Jen na test."))return; const raw=localStorage.getItem(APP_KEY+"_unsafe"); state=raw?JSON.parse(raw):seedState(); unsafeMode=true; vaultPassword=""; openApp(); toast("Dočasný nešifrovaný režim."); };
-  $("resetVaultBtn").onclick=()=>{ if(confirm("Smazat lokální data v9 + legacy keys?")){ localStorage.removeItem(APP_KEY); localStorage.removeItem(APP_KEY+"_unsafe"); LEGACY_KEYS.forEach(k=>localStorage.removeItem(k)); location.reload(); }};
+  $("resetVaultBtn").onclick=()=>{ if(confirm("Smazat lokální data v10 + legacy keys?")){ localStorage.removeItem(APP_KEY); localStorage.removeItem(APP_KEY+"_unsafe"); LEGACY_KEYS.forEach(k=>localStorage.removeItem(k)); location.reload(); }};
   $("quickSaveBtn").onclick=()=>saveVault(); $("lockBtn").onclick=()=>location.reload();
   $("themeToggle").onclick=()=>{ state.settings.theme=state.settings.theme==="light"?"dark":"light"; applyTheme(); saveVault(false); };
   $("datePicker").onchange=e=>{ selectedDate=e.target.value||todayIso(); renderAll(); };
@@ -381,8 +381,8 @@ async function sendVaultWebhook(){ const url=state.settings.email.webhookUrl||$(
 function renderSecurityStats(){ const raw=localStorage.getItem(APP_KEY); const size=raw?Math.round(raw.length/1024):0; $("securityStats").innerHTML=`<div class="item"><strong>Vault mode</strong><small>${unsafeMode?"UNSAFE plaintext test mode":"AES-GCM encrypted local vault"}</small></div><div class="item"><strong>KDF</strong><small>PBKDF2-SHA256 · ${state.settings.security.kdfIterations.toLocaleString("cs-CZ")} iterations</small></div><div class="item"><strong>Local size</strong><small>${size} KB encrypted JSON</small></div><div class="item"><strong>Device ID</strong><small>${escapeHtml(state.meta.deviceId)}</small></div>`; }
 async function changePassword(){ const a=$("newVaultPassword").value, b=$("newVaultPassword2").value; if(!a||a.length<6)return toast("Nové heslo aspoň 6 znaků."); if(a!==b)return toast("Hesla nesedí."); vaultPassword=a; unsafeMode=false; await saveVault(false); toast("Vault heslo změněno a vault přešifrován."); }
 function download(filename,text,type="application/json"){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=filename; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
-async function exportEncrypted(){ if(!encryptedVaultCache) encryptedVaultCache=await encryptState(state,vaultPassword); download(`training_arc_v9_encrypted_${todayIso()}.json`,JSON.stringify(encryptedVaultCache,null,2)); }
-function exportPlain(){ if(!confirm("Plain export není šifrovaný. Fakt stáhnout?"))return; download(`training_arc_v9_plain_${todayIso()}.json`,JSON.stringify(state,null,2)); }
+async function exportEncrypted(){ if(!encryptedVaultCache) encryptedVaultCache=await encryptState(state,vaultPassword); download(`training_arc_v10_encrypted_${todayIso()}.json`,JSON.stringify(encryptedVaultCache,null,2)); }
+function exportPlain(){ if(!confirm("Plain export není šifrovaný. Fakt stáhnout?"))return; download(`training_arc_v10_plain_${todayIso()}.json`,JSON.stringify(state,null,2)); }
 async function copyEncrypted(){ if(!encryptedVaultCache) encryptedVaultCache=await encryptState(state,vaultPassword); await navigator.clipboard.writeText(JSON.stringify(encryptedVaultCache)); toast("Encrypted vault zkopírován."); }
 function importBackup(e){ const file=e.target.files?.[0]; if(!file)return; const reader=new FileReader(); reader.onload=async()=>{ try{ const obj=JSON.parse(reader.result); if(obj.cipher&&obj.data){ const pass=prompt("Heslo k importovanému encrypted vaultu:"); state=await decryptVault(obj,pass); vaultPassword=pass; encryptedVaultCache=obj; localStorage.setItem(APP_KEY,JSON.stringify(obj)); } else { if(!confirm("Import plain JSON přepíše aktuální data."))return; state=obj; } migrate(); await saveVault(false); openApp(); toast("Import hotový."); }catch(err){toast("Import error: "+err.message);} }; reader.readAsText(file); }
 
@@ -529,7 +529,7 @@ async function requestNotifications(){
   const res=await Notification.requestPermission(); state.settings.planner.notify=res==='granted'; await saveVault(false); toast(res==='granted'?'Notifications povoleny.':'Notifications nepovoleny.');
 }
 function exportIcs(){
-  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Training Arc OS v9//CZ'];
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Training Arc OS v10//CZ'];
   state.events.forEach(e=>{ const dt=(e.date||todayIso()).replaceAll('-','')+'T'+((e.time||'09:00').replace(':','')+'00'); lines.push('BEGIN:VEVENT','UID:'+e.id+'@training-arc-os','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z','DTSTART:'+dt,'SUMMARY:'+icsEscape(e.title),'DESCRIPTION:'+icsEscape((e.type||'')+' '+(e.notes||'')),'END:VEVENT'); });
   lines.push('END:VCALENDAR'); download('training_arc_events_'+todayIso()+'.ics',lines.join('\r\n'));
 }
@@ -624,7 +624,7 @@ function v7Recipes(){
 }
 function v7Migrate(){
   state.mealPlans=state.mealPlans||[]; state.groceryItems=state.groceryItems||[]; state.spendLogs=state.spendLogs||[]; state.measurements=state.measurements||[]; state.bodyRecovery=state.bodyRecovery||[]; state.progressPhotos=state.progressPhotos||[]; state.quests=state.quests||[]; state.weeklyReviews=state.weeklyReviews||[];
-  state.meta.version=8;
+  state.meta.version=10; state.meta.label="v10 Historic";
   state.recipes=mergeRecipes(mergeRecipes(state.recipes||[], defaultRecipes()), v7Recipes());
   state.foods=mergeFoodDb(state.foods||[], v7FoodExpansion()).slice(0,7777);
   state.exercisePresets=[...new Set([...(state.exercisePresets||[]),...V7_EXERCISE_BOOST])];
@@ -651,13 +651,13 @@ function saveQuest(){ const title=$('questTitle').value.trim(); if(!title)return
 function saveWeeklyReview(){ state.weeklyReviews.unshift({id:uid(),date:selectedDate,score:num($('reviewScore').value),focus:$('reviewFocus').value.trim(),text:$('reviewText').value.trim(),createdAt:new Date().toISOString()}); ['reviewScore','reviewFocus','reviewText'].forEach(id=>$(id).value=''); saveVault(); } window.deleteReview=id=>{state.weeklyReviews=state.weeklyReviews.filter(x=>x.id!==id);saveVault();};
 function renderAchievements(){ const badges=[['🔥','7 food logs',(Object.values(state.days).filter(d=>(d.foodLogs||[]).length).length>=7)],['🏃','30 km week',weekRunKm()>=30],['💪','10 workouts',state.workouts.length>=10],['📚','Reading arc',state.books.some(b=>num(b.current)>50)],['🧘','Stretch stack',state.stretchLogs.length>=7],['🔐','Secure vault',!unsafeMode&&!!vaultPassword],['☁️','Cloud ready',!!supabaseClient],['🏆','Quest finisher',state.quests.some(q=>q.status==='done')],['🥗','Meal prepper',state.mealPlans.length>=7],['🧠','Future self',state.futureLetters.length>=3]]; $('achievementGrid').innerHTML=badges.map(b=>`<div class="badge ${b[2]?'unlocked':''}"><span class="emoji">${b[0]}</span><strong>${escapeHtml(b[1])}</strong><small>${b[2]?'Unlocked':'Locked'}</small></div>`).join(''); }
 function renderHostingLab(){ if(!$('hostingChecklist'))return; const checks=[['Local vault exists',!!localStorage.getItem(APP_KEY)],['HTTPS ready after deploy',location.protocol==='https:'||location.hostname==='localhost'],['Service worker registered','serviceWorker' in navigator],['Supabase config saved',!!(state.settings.cloud?.url&&state.settings.cloud?.key)],['Not using service_role key',!(state.settings.cloud?.key||'').includes('service_role')],['Manifest present',true],['Export backup available',true]]; $('hostingChecklist').innerHTML=checks.map(c=>`<div class="item"><strong><span class="health-dot ${c[1]?'':'warn'}"></span>${escapeHtml(c[0])}</strong><small>${c[1]?'OK':'Needs setup'}</small></div>`).join(''); $('hostingNotes').innerHTML=['Deploy frontend na Vercel/Netlify/GitHub Pages.','Supabase: zapnout Auth + spustit supabase.sql + RLS.','Do browseru jen anon/publishable key, nikdy service_role.','Po deployi otestuj: create vault → cloud sign in → push → mobile pull.'].map(x=>`<div class="coach-tip">${escapeHtml(x)}</div>`).join(''); }
-function runSelfTest(){ const out=[]; out.push('Training Arc OS v9 self-test'); out.push('Date: '+new Date().toISOString()); out.push('LocalStorage: '+(typeof localStorage!=='undefined'?'OK':'missing')); out.push('WebCrypto: '+(crypto?.subtle?'OK':'missing')); out.push('ServiceWorker: '+('serviceWorker' in navigator?'OK':'missing')); out.push('Vault mode: '+(unsafeMode?'unsafe':'encrypted/local-ready')); out.push('Foods loaded: '+(state.foods?.length||0)); out.push('Recipes loaded: '+(allRecipes().length||0)); out.push('Cloud config: '+(state.settings.cloud?.url?'saved':'not set')); $('selfTestResult').textContent=out.join('\n'); }
-async function copyDeployPlan(){ const txt=`Training Arc OS v8 deploy plan\n1) Upload files to GitHub repo.\n2) Import repo in Vercel/Netlify.\n3) Create Supabase project.\n4) Run supabase.sql.\n5) In app Connection Hub, paste URL + anon key.\n6) Sign up/sign in, create encrypted vault, push from PC, pull on mobile/tablet.\n7) Keep service_role key private.`; await navigator.clipboard.writeText(txt); toast('Deploy plan zkopírován.'); }
+function runSelfTest(){ const out=[]; out.push('Training Arc OS v10 self-test'); out.push('Date: '+new Date().toISOString()); out.push('LocalStorage: '+(typeof localStorage!=='undefined'?'OK':'missing')); out.push('WebCrypto: '+(crypto?.subtle?'OK':'missing')); out.push('ServiceWorker: '+('serviceWorker' in navigator?'OK':'missing')); out.push('Vault mode: '+(unsafeMode?'unsafe':'encrypted/local-ready')); out.push('Foods loaded: '+(state.foods?.length||0)); out.push('Recipes loaded: '+(allRecipes().length||0)); out.push('Cloud config: '+(state.settings.cloud?.url?'saved':'not set')); $('selfTestResult').textContent=out.join('\n'); }
+async function copyDeployPlan(){ const txt=`Training Arc OS v10 deploy plan\n1) Upload files to GitHub repo.\n2) Import repo in Vercel/Netlify.\n3) Create Supabase project.\n4) Run supabase.sql.\n5) In app Connection Hub, paste URL + anon key.\n6) Sign up/sign in, create encrypted vault, push from PC, pull on mobile/tablet.\n7) Keep service_role key private.`; await navigator.clipboard.writeText(txt); toast('Deploy plan zkopírován.'); }
 
 
 /* =========================
-   V7 Versions / Updates page
-   Version label stays v7; this is a patch/polish layer before hosting.
+   V10 Versions / Updates page
+   Current visible release label is v10 Historic.
 ========================= */
 function versionHistory(){
   return [
@@ -667,16 +667,19 @@ function versionHistory(){
     {v:'v4',title:'Media + import',tag:'email backup',items:['Email/webhook reports','Custom foods with images','Expanded food presets','Workout history import for presets']},
     {v:'v5',title:'Supreme sync build',tag:'cloud/security',items:['Supabase login/sync hub','Security center and password change','1000+ generated food presets','Meal builder + hosting-ready PWA base']},
     {v:'v6',title:'Titan expansion',tag:'life planning',items:['Recipes and custom recipes','Planner/timeable events + ICS export','MyFutureSelf letters/goals','Stretching and recovery routines']},
-    {v:'v7',title:'Lucky Number giga build',tag:'current',items:['4000+ food presets and performance meal templates','Weekly meal planner, grocery list and spending tracker','Body vault, progress photos, quests and achievements','Hosting Lab, Connection Hub and version/update subpage']}
+    {v:'v7',title:'Lucky Number giga build',tag:'legacy',items:['4000+ food presets and performance meal templates','Weekly meal planner, grocery list and spending tracker','Body vault, progress photos, quests and achievements','Hosting Lab, Connection Hub and version/update subpage']},
+    {v:'v8',title:'Fire Athlete OS',tag:'legacy',items:['Performance Lab and Athlete Toolkit','Motivation Vault, discipline contracts and bad-day protocol','Plans & Monetization Lab for future paid versions','9000+ food preset direction and 300+ recipe/performance templates']},
+    {v:'v9',title:'Ulti stability build',tag:'legacy',items:['Major sidebar and mobile drawer fix','Split into css/js/data packs','Coach Hub, Program Builder, Injury Guard and Sleep Lab','Owner Lab and hosting-ready polish']},
+    {v:'v10',title:'Historic Ultimate Athlete OS',tag:'current',items:['V10 Launchpad, AI Coach Studio, Season Roadmap and Exercise Library','Coach Share, Data Doctor, Template Market and Launch HQ','Docs folder, serverless API examples and production structure','Prepared for hosting, Supabase sync tests and future Free/Pro/Elite versions']}
   ];
 }
 function currentPatchNotes(){
   return [
-    'V8 Fire přidává Performance Lab, Motivation Vault, Athlete Toolkit a Plans Lab.',
-    'Dashboard dostal rychlý proklik na changelog, aby šlo před hostingem zkontrolovat, co je uvnitř.',
-    'Command palette nově umí skočit do Versions / Updates a názvy nových v7 modulů se správně zobrazují v topbaru.',
-    'Hosting readiness je víc propojený s changelogem: můžeš copy/exportovat release notes a pak řešit deploy.',
-    'Balíček je pořád static/local-first: žádné nové backend požadavky před hostingem.'
+    'V10 Historic je aktuální build všude: tab, header, lock screen, main page, changelog i export názvy.',
+    'Nové moduly: Launchpad, AI Coach Studio, Season Roadmap, Exercise Library, Coach Share, Data Doctor, Template Market a Launch HQ.',
+    'Přidané data packy: V10 food atlas, recipe templates, exercise/protocol library a quote pack.',
+    'Přidané docs a api examples pro hosting, Supabase, security, payments, email a AI endpoint.',
+    'Reálné platby/email/AI secrets stále musí běžet přes backend/serverless — nikdy ne ve frontend souborech.'
   ];
 }
 function renderVersionsPage(){
@@ -687,10 +690,10 @@ function renderVersionsPage(){
   if($('versionRecipeCount')) $('versionRecipeCount').textContent=fmt(allRecipes.length||0);
   if($('versionExerciseCount')) $('versionExerciseCount').textContent=fmt((state.exercisePresets||[]).length);
   if($('versionModuleCount')) $('versionModuleCount').textContent=fmt($$('.view').length);
-  $('versionTimeline').innerHTML=versionHistory().map((r,i)=>`<article class="release-card ${r.v==='v7'?'current':''}"><div class="release-index">${i+1}</div><div><div class="item-head"><div><span class="tag">${escapeHtml(r.tag)}</span><h3>${escapeHtml(r.v)} · ${escapeHtml(r.title)}</h3></div>${r.v==='v7'?'<span class="status-pill">current</span>':''}</div><ul>${r.items.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul></div></article>`).join('');
+  $('versionTimeline').innerHTML=versionHistory().map((r,i)=>`<article class="release-card ${r.v==='v10'?'current':''}"><div class="release-index">${i+1}</div><div><div class="item-head"><div><span class="tag">${escapeHtml(r.tag)}</span><h3>${escapeHtml(r.v)} · ${escapeHtml(r.title)}</h3></div>${r.v==='v10'?'<span class="status-pill">current</span>':''}</div><ul>${r.items.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul></div></article>`).join('');
   $('currentPatchNotes').innerHTML=currentPatchNotes().map(x=>`<div class="coach-tip">${escapeHtml(x)}</div>`).join('');
   const steps=[
-    ['1','GitHub repo','Nahraj aktuální v7 soubory do repa.'],
+    ['1','GitHub repo','Nahraj aktuální v10 soubory do repa.'],
     ['2','Vercel / Netlify','Deploy static appku, automatické HTTPS.'],
     ['3','Supabase','Spusť supabase.sql, zapni Auth/RLS, zkopíruj URL + anon key.'],
     ['4','PC → mobile test','Create vault → sign in → push → otevřít na mobilu → pull.'],
@@ -699,20 +702,20 @@ function renderVersionsPage(){
   $('versionHostingSteps').innerHTML=steps.map(s=>`<div class="version-step"><strong>${s[0]}</strong><h4>${escapeHtml(s[1])}</h4><p>${escapeHtml(s[2])}</p></div>`).join('');
 }
 function changelogText(){
-  return 'Training Arc OS v8 Fire — changelog\n\n' + versionHistory().map(r=>`${r.v} — ${r.title} [${r.tag}]\n`+r.items.map(x=>' - '+x).join('\n')).join('\n\n') + '\n\nCurrent v8 notes\n' + currentPatchNotes().map(x=>' - '+x).join('\n');
+  return 'Training Arc OS v10 Historic — changelog\n\n' + versionHistory().map(r=>`${r.v} — ${r.title} [${r.tag}]\n`+r.items.map(x=>' - '+x).join('\n')).join('\n\n') + '\n\nCurrent V10 notes\n' + currentPatchNotes().map(x=>' - '+x).join('\n');
 }
 async function copyChangelog(){
   await navigator.clipboard.writeText(changelogText());
   toast('Changelog zkopírován.');
 }
 function exportChangelog(){
-  download('training_arc_os_v7_changelog.txt', changelogText(), 'text/plain');
+  download('training_arc_os_v10_changelog.txt', changelogText(), 'text/plain');
 }
 
 
 /* =========================
-   V8 FIRE — Athlete OS expansion
-   Big feature layer before hosting / v10.
+   V10 retained Athlete OS expansion
+   Legacy feature layer retained inside the v10 build.
 ========================= */
 const V8_EXERCISE_BOOST = [
   "Paused incline bench", "Spoto press", "Close-grip bench", "Weighted vest push-ups", "Backpack push-ups", "Clap push-ups", "Depth push-ups", "Pike push-ups",
@@ -795,14 +798,14 @@ function defaultMotivationQuotes(){
   ];
 }
 function v8Migrate(){
-  state.meta.version=8; state.meta.label='v8 Fire';
+  state.meta.version=10; state.meta.label='v10 Historic';
   state.foods=mergeFoodDb(state.foods||[], v8FoodExpansion()).slice(0,15000);
   state.recipes=mergeRecipes(mergeRecipes(state.recipes||[], v8RecipeExpansion()), defaultRecipes());
   state.exercisePresets=[...new Set([...(state.exercisePresets||[]),...V8_EXERCISE_BOOST])];
   state.motivationQuotes=state.motivationQuotes||defaultMotivationQuotes();
   state.identityRules=state.identityRules||['Jsem člověk, který zapíše data i když den nebyl perfect.','Nejdu maxovat, když tělo hlásí recovery.','Protein, spánek a kroky jsou moje daily basics.'];
   state.disciplineContracts=state.disciplineContracts||[]; state.sessionGoals=state.sessionGoals||[]; state.gearItems=state.gearItems||[];
-  state.planConfig=state.planConfig||{currentPlan:'Personal Free',price:25,notes:'V8 paywall-ready, real payments later via Stripe/serverless.'};
+  state.planConfig=state.planConfig||{currentPlan:'Personal Free',price:25,notes:'V10 paywall-ready, real payments later via Stripe/serverless.'};
   state.protocolLogs=state.protocolLogs||[];
 }
 const __v8BaseMigrate=migrate; migrate=function(){ __v8BaseMigrate(); v8Migrate(); };
@@ -879,7 +882,7 @@ function planDefinitions(){ return [
 ]; }
 function renderPlansLab(){ if(!$('planCards'))return; const defs=planDefinitions(); $('planCards').innerHTML=defs.map(p=>`<article class="plan-card glass"><span class="tag">${escapeHtml(p.tag)}</span><h3>${escapeHtml(p.name)}</h3><strong>${escapeHtml(p.price)}</strong><ul>${p.features.map(f=>`<li>${escapeHtml(f)}</li>`).join('')}</ul></article>`).join(''); $('currentPlan').value=state.planConfig.currentPlan||'Personal Free'; $('planPrice').value=state.planConfig.price||25; $('planFeatureMatrix').innerHTML=defs.map(p=>`<div class="item"><strong>${escapeHtml(p.name)}</strong><small>${p.features.map(escapeHtml).join(' · ')}</small></div>`).join(''); const checklist=['Keep core app useful free/personal.','Real payments: Stripe Checkout or Paddle via serverless endpoint.','Never put Stripe secret key in frontend.','Supabase stores user plan after webhook verifies payment.','Feature gates must be server-trusted for public product; local gates are only UI convenience.']; $('stripeChecklist').innerHTML=checklist.map(x=>`<div class="coach-tip">${escapeHtml(x)}</div>`).join(''); }
 function savePlanConfig(){ state.planConfig.currentPlan=$('currentPlan').value; state.planConfig.price=num($('planPrice').value,25); saveVault(); toast('Plan config uložen.'); }
-async function copyPricingPlan(){ const txt=planDefinitions().map(p=>`${p.name} — ${p.price}\n`+p.features.map(f=>' - '+f).join('\n')).join('\n\n')+'\n\nV8 note: real checkout later via Stripe/serverless + Supabase webhook.'; await navigator.clipboard.writeText(txt); toast('Pricing plan copied.'); }
+async function copyPricingPlan(){ const txt=planDefinitions().map(p=>`${p.name} — ${p.price}\n`+p.features.map(f=>' - '+f).join('\n')).join('\n\n')+'\n\nV10 note: real checkout later via Stripe/serverless + Supabase webhook.'; await navigator.clipboard.writeText(txt); toast('Pricing plan copied.'); }
 
 function versionHistory(){
   return [
@@ -901,13 +904,53 @@ function renderVersionsPage(){
   if($('versionRecipeCount')) $('versionRecipeCount').textContent=fmt(recipes.length||0);
   if($('versionExerciseCount')) $('versionExerciseCount').textContent=fmt((state.exercisePresets||[]).length);
   if($('versionModuleCount')) $('versionModuleCount').textContent=fmt($$('.view').length);
-  $('versionTimeline').innerHTML=versionHistory().map((r,i)=>`<article class="release-card ${r.v==='v8'?'current':''}"><div class="release-index">${i+1}</div><div><div class="item-head"><div><span class="tag">${escapeHtml(r.tag)}</span><h3>${escapeHtml(r.v)} · ${escapeHtml(r.title)}</h3></div>${r.v==='v8'?'<span class="status-pill">current</span>':''}</div><ul>${r.items.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul></div></article>`).join('');
+  $('versionTimeline').innerHTML=versionHistory().map((r,i)=>`<article class="release-card ${r.v==='v10'?'current':''}"><div class="release-index">${i+1}</div><div><div class="item-head"><div><span class="tag">${escapeHtml(r.tag)}</span><h3>${escapeHtml(r.v)} · ${escapeHtml(r.title)}</h3></div>${r.v==='v10'?'<span class="status-pill">current</span>':''}</div><ul>${r.items.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul></div></article>`).join('');
   $('currentPatchNotes').innerHTML=currentPatchNotes().map(x=>`<div class="coach-tip">${escapeHtml(x)}</div>`).join('');
-  const steps=[['1','GitHub repo','Nahraj aktuální v8 soubory do repa.'],['2','Vercel / Netlify','Deploy static appku, automatické HTTPS.'],['3','Supabase','Spusť supabase.sql, zapni Auth/RLS, zkopíruj URL + anon key.'],['4','PC → mobile test','Create vault → sign in → push → otevřít na mobilu → pull.'],['5','Paid later','Pokud chceš placené verze, přidat Stripe/Paddle přes serverless endpoint + Supabase webhook.']];
+  const steps=[['1','GitHub repo','Nahraj aktuální v10 soubory do repa.'],['2','Vercel / Netlify','Deploy static appku, automatické HTTPS.'],['3','Supabase','Spusť supabase.sql, zapni Auth/RLS, zkopíruj URL + anon key.'],['4','PC → mobile test','Create vault → sign in → push → otevřít na mobilu → pull.'],['5','Paid later','Pokud chceš placené verze, přidat Stripe/Paddle přes serverless endpoint + Supabase webhook.']];
   $('versionHostingSteps').innerHTML=steps.map(s=>`<div class="version-step"><strong>${s[0]}</strong><h4>${escapeHtml(s[1])}</h4><p>${escapeHtml(s[2])}</p></div>`).join('');
 }
-function changelogText(){ return 'Training Arc OS v8 Fire — changelog\n\n' + versionHistory().map(r=>`${r.v} — ${r.title} [${r.tag}]\n`+r.items.map(x=>' - '+x).join('\n')).join('\n\n') + '\n\nCurrent v8 notes\n' + currentPatchNotes().map(x=>' - '+x).join('\n'); }
-function exportChangelog(){ download('training_arc_os_v8_changelog.txt', changelogText(), 'text/plain'); }
+function changelogText(){ return 'Training Arc OS v10 Historic — changelog\n\n' + versionHistory().map(r=>`${r.v} — ${r.title} [${r.tag}]\n`+r.items.map(x=>' - '+x).join('\n')).join('\n\n') + '\n\nCurrent V10 notes\n' + currentPatchNotes().map(x=>' - '+x).join('\n'); }
+function exportChangelog(){ download('training_arc_os_v10_changelog.txt', changelogText(), 'text/plain'); }
+
+/* V10 final visible-version overrides — keeps UI/title/history/export labels consistent. */
+function versionHistory(){
+  return [
+    {v:'v1',title:'Core prototype',tag:'foundation',items:['Local-first dashboard','Basic calories, gym and run logs','Simple graphs, PR board, export/import','PIN lock starter']},
+    {v:'v2',title:'Premium Life OS',tag:'secure vault',items:['AES-GCM encrypted vault concept','Life OS modules: journal, mood, chores, books','Better analytics and AI-style coach tips','Supabase cloud-ready architecture']},
+    {v:'v3',title:'All-in-one training',tag:'calculators',items:['Food calculator per 100 g → portion grams','Custom food database','Gym presets based on your style','Running types + 1RM, VO2max, BMI, TDEE, pace tools']},
+    {v:'v4',title:'Media + import',tag:'email backup',items:['Email/webhook reports','Custom foods with images','Expanded food presets','Workout history import for presets']},
+    {v:'v5',title:'Supreme sync build',tag:'cloud/security',items:['Supabase login/sync hub','Security center and password change','1000+ generated food presets','Meal builder + hosting-ready PWA base']},
+    {v:'v6',title:'Titan expansion',tag:'life planning',items:['Recipes and custom recipes','Planner/timeable events + ICS export','MyFutureSelf letters/goals','Stretching and recovery routines']},
+    {v:'v7',title:'Lucky Number giga build',tag:'legacy',items:['4000+ food presets and performance meal templates','Weekly meal planner, grocery list and spending tracker','Body vault, progress photos, quests and achievements','Hosting Lab, Connection Hub and version/update subpage']},
+    {v:'v8',title:'Fire Athlete OS',tag:'legacy',items:['Performance Lab, Motivation Vault and Athlete Toolkit','Plans & Monetization Lab for future paid versions','Expanded nutrition and recipe templates','Discipline contracts, protocols and sport checklists']},
+    {v:'v9',title:'Ulti stability build',tag:'legacy',items:['Major sidebar and mobile drawer fix','Split into css/js/data packs','Coach Hub, Program Builder, Injury Guard and Sleep Lab','Owner Lab and hosting-ready polish']},
+    {v:'v10',title:'Historic Ultimate Athlete OS',tag:'current',items:['V10 Launchpad, AI Coach Studio, Season Roadmap and Exercise Library','Coach Share, Data Doctor, Template Market and Launch HQ','Docs folder, serverless API examples and production structure','Prepared for hosting, Supabase sync tests and future Free/Pro/Elite versions']}
+  ];
+}
+function currentPatchNotes(){
+  return [
+    'V10 Historic je aktuální build všude: browser tab, lock screen, sidebar brand, main page, history/changelog i export názvy.',
+    'Nové moduly: Launchpad, AI Coach Studio, Season Roadmap, Exercise Library, Coach Share, Data Doctor, Template Market a Launch HQ.',
+    'Přidané data packy: V10 food atlas, recipe templates, exercise/protocol library a quote pack.',
+    'Přidané docs a api examples pro hosting, Supabase, security, payments, email a AI endpoint.',
+    'Reálné platby/email/AI secrets stále musí běžet přes backend/serverless — nikdy ne ve frontend souborech.'
+  ];
+}
+function renderVersionsPage(){
+  if(!$('versionTimeline')) return;
+  const allFoods=(state.foods||[]).length+(state.customFoods||[]).length; const recipes=allRecipes();
+  if($('versionFoodCount')) $('versionFoodCount').textContent=fmt(allFoods);
+  if($('versionRecipeCount')) $('versionRecipeCount').textContent=fmt(recipes.length||0);
+  if($('versionExerciseCount')) $('versionExerciseCount').textContent=fmt((state.exercisePresets||[]).length);
+  if($('versionModuleCount')) $('versionModuleCount').textContent=fmt($$('.view').length);
+  $('versionTimeline').innerHTML=versionHistory().map((r,i)=>`<article class="release-card ${r.v==='v10'?'current':''}"><div class="release-index">${i+1}</div><div><div class="item-head"><div><span class="tag">${escapeHtml(r.tag)}</span><h3>${escapeHtml(r.v)} · ${escapeHtml(r.title)}</h3></div>${r.v==='v10'?'<span class="status-pill">current</span>':''}</div><ul>${r.items.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul></div></article>`).join('');
+  $('currentPatchNotes').innerHTML=currentPatchNotes().map(x=>`<div class="coach-tip">${escapeHtml(x)}</div>`).join('');
+  const steps=[['1','GitHub repo','Nahraj aktuální v10 soubory do repa.'],['2','Vercel / Netlify','Deploy static appku, automatické HTTPS.'],['3','Supabase','Spusť supabase.sql, zapni Auth/RLS, zkopíruj URL + anon key.'],['4','PC → mobile test','Create vault → sign in → push → otevřít na mobilu → pull.'],['5','Serverless later','Email reports, Stripe/Paddle a AI endpoint s tajnými klíči mimo frontend.']];
+  $('versionHostingSteps').innerHTML=steps.map(s=>`<div class="version-step"><strong>${s[0]}</strong><h4>${escapeHtml(s[1])}</h4><p>${escapeHtml(s[2])}</p></div>`).join('');
+}
+function changelogText(){ return 'Training Arc OS v10 Historic — changelog\n\n' + versionHistory().map(r=>`${r.v} — ${r.title} [${r.tag}]\n`+r.items.map(x=>' - '+x).join('\n')).join('\n\n') + '\n\nCurrent V10 notes\n' + currentPatchNotes().map(x=>' - '+x).join('\n'); }
+function exportChangelog(){ download('training_arc_os_v10_changelog.txt', changelogText(), 'text/plain'); }
+
 window.allRecipes=allRecipes;
 
 init();

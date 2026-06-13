@@ -1,83 +1,41 @@
-# Training Arc OS v9 Ulti
+# Training Arc OS v10 Historic
 
-Private all-in-one athlete + life operating system. V9 is the big pre-hosting refactor/update.
+Private all-in-one athlete + life operating system. V10 is the historic milestone build: secure vault, cloud-ready sync, training/nutrition/recovery/life modules, AI Coach Studio, launch docs and future monetization architecture.
 
-## What is inside
+## Run locally
 
-- `index.html` — app shell and all original modules
-- `style.css` — base UI from previous builds
-- `app.js` — core local-first app logic
-- `css/v9-ulti.css` — V9 premium polish + fixed sidebar/responsive layout
-- `js/v9-addon.js` — V9 modules and patch layer
-- `data/v9-foods.js` — extra food pack generator
-- `data/v9-recipes.js` — extra recipe pack generator
-- `manifest.json` + `sw.js` — PWA/cache base
-- `supabase.sql` — cloud sync table/RLS setup
+Open `index.html` in your browser. Create a vault passphrase and use the app offline.
 
-## V9 headline changes
+## What is new in V10
 
-### Fixed sidebar
+- V10 Launchpad with daily command, release scorecard and project health.
+- AI Coach Studio for safe prompts you can paste into ChatGPT without dumping your full vault.
+- Season Roadmap for 2–24 week hybrid athlete blocks.
+- Exercise Library with personal cues, search and progression generator.
+- Coach Share for privacy-safe weekly summaries.
+- Data Doctor for diagnostics, backup strategy and migration readiness.
+- Template Market for future Free/Pro/Elite content packs.
+- Launch HQ for hosting, cloud, payments, email and beta checklist.
+- V10 data packs: food atlas, recipes, exercise/protocol library and quote pack.
+- Project split into more folders: `css/`, `js/`, `data/`, `docs/`, `api/`, `assets/`.
 
-The old left bar was too crowded and broke especially on narrower screens. V9 adds:
+## Recommended hosting path
 
-- sticky desktop sidebar with real internal scrolling
-- nav search with `/` keyboard shortcut
-- compact sidebar mode
-- mobile drawer with backdrop
-- fixed media query conflicts from older versions
-- better topbar and module spacing
+1. Upload the full `training_arc_os_v10` folder to a GitHub repo.
+2. Deploy to Vercel, Netlify or GitHub Pages.
+3. Create a Supabase project.
+4. Run `supabase.sql` in Supabase SQL editor.
+5. In the app, open Connections and paste Supabase Project URL + anon/public key.
+6. Create a cloud account, push encrypted vault on PC, then pull it on mobile/tablet.
 
-### New V9 modules
+## Security rules
 
-- Coach Hub — readiness, weekly review, red flags, AI prompt copy
-- Program Builder — hybrid gym/run training block generator
-- Sport Events — races, time trials, school/police tests, benchmarks
-- Injury Guard — pain/symptom log and risk rules
-- Sleep Lab — sleep logs, caffeine cutoff, recovery advice
-- Pantry — stock tracking and grocery draft
-- Owner Lab — free/pro/elite architecture and hosting-to-paid checklist
+- The vault is designed local-first and encrypted before cloud sync.
+- Only use Supabase anon/publishable key in the browser.
+- Never put Supabase `service_role`, Stripe secret key, email API secret or AI API key into frontend files.
+- Real email reports, Stripe/Paddle checkout and AI endpoints belong in serverless/backend functions.
 
-### Expanded data
+## Notes
 
-- Existing V8 data stays included
-- V9 adds another generated performance food pack
-- V9 adds more recipe/performance templates
-- More exercise/run presets are added during migration
-
-## Running locally
-
-Unzip and open:
-
-```txt
-index.html
-```
-
-For best testing, run a tiny local server:
-
-```bash
-python -m http.server 8080
-```
-
-Then open `http://localhost:8080`.
-
-## Hosting plan
-
-Recommended cheapest stack:
-
-1. GitHub repo
-2. Vercel or Netlify for static hosting
-3. Supabase Free for Auth + encrypted vault sync
-4. Later: serverless function for Stripe/email/AI endpoint
-
-## Security notes
-
-- Local vault uses browser WebCrypto through the core app.
-- Cloud sync is designed to send encrypted vault data.
-- Use only Supabase anon/publishable key in the browser.
-- Never put Supabase service role key, Stripe secret key, or any private backend secret inside frontend files.
-
-## Version
-
-Branding: **Training Arc OS v9 Ulti**.
-
-Next big milestone can be V10 after hosting/cloud is working on PC + mobile + tablet.
+Nutrition presets are rough estimates. Food labels, weighing and your own custom entries win.
+This app is for personal tracking and planning, not medical diagnosis.

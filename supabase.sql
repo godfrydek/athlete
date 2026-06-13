@@ -1,4 +1,4 @@
--- Training Arc OS v7 Supabase setup
+-- Training Arc OS v10 Supabase setup
 -- Run in Supabase SQL editor.
 -- Stores ONLY encrypted vault JSON. The client never uploads decrypted data unless you intentionally change the app.
 
@@ -38,4 +38,26 @@ create index if not exists training_arc_vaults_updated_at_idx on public.training
 -- Optional: if you later add Supabase Storage food photos instead of storing compressed base64 in the vault:
 -- 1) Create a private bucket named training-arc-food-images
 -- 2) Add storage policies limiting object access to auth.uid() folders
--- Current v8 stores food images inside encrypted vault for simplicity.
+-- Current v10 stores food images inside encrypted vault for simplicity.
+
+
+-- Optional future paid plan table for Free / Pro / Elite.
+-- Only update this from trusted serverless/webhook code, not from the browser.
+create table if not exists public.training_arc_user_plans (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  plan text not null default 'free',
+  status text not null default 'active',
+  provider text,
+  provider_customer_id text,
+  provider_subscription_id text,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.training_arc_user_plans enable row level security;
+
+drop policy if exists "Users can read own training arc plan" on public.training_arc_user_plans;
+create policy "Users can read own training arc plan"
+  on public.training_arc_user_plans
+  for select
+  to authenticated
+  using (auth.uid() = user_id);

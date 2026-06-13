@@ -4,16 +4,22 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#050711" />
-  <meta name="description" content="Training Arc OS v9 Ulti — secure private all-in-one athlete, nutrition, recovery, planning and life OS." />
-  <title>Training Arc OS v9 Ulti</title>
+  <meta name="description" content="Training Arc OS v10 Historic — secure private all-in-one athlete, nutrition, recovery, planning and life OS." />
+  <title>Training Arc OS v10 Historic</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="css/v9-ulti.css" />
+  <link rel="stylesheet" href="css/v10-historic.css" />
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="app.js"></script>
   <script defer src="data/v9-foods.js"></script>
   <script defer src="data/v9-recipes.js"></script>
   <script defer src="js/v9-addon.js"></script>
+  <script defer src="data/v10-foods.js"></script>
+  <script defer src="data/v10-recipes.js"></script>
+  <script defer src="data/v10-exercises.js"></script>
+  <script defer src="data/v10-quotes.js"></script>
+  <script defer src="js/v10-addon.js"></script>
 </head>
 <body>
   <div class="aurora aurora-a"></div>
@@ -27,7 +33,7 @@
           <div class="brand-mark">TA</div>
           <div>
             <p class="eyebrow">encrypted private vault</p>
-            <h1>Training Arc OS <span>v9</span></h1>
+            <h1>Training Arc OS <span>v10</span></h1>
           </div>
         </div>
         <p class="lead">All-in-one training arc: kalorie, gym, běh, životní deník, knihy, grafy, cloud sync a secure backup.</p>
@@ -49,7 +55,7 @@
       </article>
 
       <aside class="glass lock-side">
-        <p class="eyebrow">v9 ulti upgrade</p>
+        <p class="eyebrow">v10 historic upgrade</p>
         <h2>Premium Life + Training OS</h2>
         <ul class="feature-list">
           <li>12000+ food presetů + custom fotky</li>
@@ -68,7 +74,7 @@
         <div class="brand-mark mini">TA</div>
         <div>
           <strong>Training Arc OS</strong>
-          <span>v9 Ulti</span>
+          <span>v10 Historic</span>
         </div>
       </div>
       <nav class="nav" id="nav">
@@ -131,7 +137,7 @@
                 <button class="btn ghost" data-jump="recovery">Stretch</button>
                 <button class="btn ghost" data-jump="mealplan">Meal plan</button>
                 <button class="btn ghost" data-jump="quests">Quest board</button>
-                <button class="btn ghost" data-jump="versions">v9 changelog</button>
+                <button class="btn ghost" data-jump="versions">v10 changelog</button>
               </div>
             </div>
             <div class="ring-wrap">
@@ -499,7 +505,7 @@
       <section id="performance" class="view">
         <div class="v8-hero glass">
           <div>
-            <p class="eyebrow">v9 athlete intelligence</p>
+            <p class="eyebrow">v10 athlete intelligence</p>
             <h1>Performance <span>readiness · periodization · race day</span></h1>
             <p class="lead">Rychlý coach cockpit pro rozhodování: kdy tlačit, kdy dát easy, co jet tento týden a jak nepřepálit hybrid grind.</p>
           </div>
@@ -633,8 +639,8 @@
         <div class="version-hero glass">
           <div>
             <p class="eyebrow">release history · current build</p>
-            <h1>Training Arc OS <span>v9 Ulti</span></h1>
-            <p class="lead">V9 Ulti je aktuální mega build před hostingem/v10. Tahle podstránka drží historii updatů, hosting checklist a quick changelog, ať víš, co je v appce hotové.</p>
+            <h1>Training Arc OS <span>v10 Historic</span></h1>
+            <p class="lead">V10 Historic je aktuální mega build před hostingem. Tahle podstránka drží historii updatů, hosting checklist a quick changelog, ať víš, co je v appce hotové.</p>
             <div class="button-row wrap">
               <button id="copyChangelogBtn" class="btn primary">Copy changelog</button>
               <button id="exportChangelogBtn" class="btn ghost">Export changelog .txt</button>
@@ -644,8 +650,8 @@
           </div>
           <div class="version-badge">
             <span>current</span>
-            <strong>v9</strong>
-            <small>Fire · athlete-ready</small>
+            <strong>v10</strong>
+            <small>Historic · ultimate</small>
           </div>
         </div>
 
@@ -658,11 +664,11 @@
 
         <div class="grid two">
           <section class="panel glass accent-panel">
-            <div class="panel-head"><h3>Update timeline</h3><span class="tag">v1 → v9</span></div>
+            <div class="panel-head"><h3>Update timeline</h3><span class="tag">v1 → v10</span></div>
             <div id="versionTimeline" class="version-timeline"></div>
           </section>
           <section class="panel glass">
-            <div class="panel-head"><h3>v9 current patch notes</h3><span class="tag">mega build</span></div>
+            <div class="panel-head"><h3>v10 current patch notes</h3><span class="tag">mega build</span></div>
             <div id="currentPatchNotes" class="coach-list"></div>
             <div class="glowline"></div>
             <p class="small muted">Poznámka: nutriční data v presetech jsou orientační. Etiketa / vlastní vážení má přednost. Security model je local-first encrypted vault + volitelný Supabase sync.</p>
@@ -670,7 +676,7 @@
         </div>
 
         <section class="panel glass">
-          <div class="panel-head"><h3>Hosting next steps</h3><span class="tag">after v9</span></div>
+          <div class="panel-head"><h3>Hosting next steps</h3><span class="tag">after v10</span></div>
           <div id="versionHostingSteps" class="version-step-grid"></div>
         </section>
       </section>

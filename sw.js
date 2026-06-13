@@ -1,8 +1,11 @@
-const CACHE = 'training-arc-os-v9-ulti-cache-v1';
+const CACHE = 'training-arc-os-v10-historic-cache-v1';
 const ASSETS = [
   './','./index.html','./style.css','./app.js','./manifest.json','./sw.js',
-  './css/v9-ulti.css','./js/v9-addon.js','./data/v9-foods.js','./data/v9-recipes.js',
-  './README.md','./supabase.sql'
+  './css/v9-ulti.css','./css/v10-historic.css',
+  './js/v9-addon.js','./js/v10-addon.js',
+  './data/v9-foods.js','./data/v9-recipes.js','./data/v10-foods.js','./data/v10-recipes.js','./data/v10-exercises.js','./data/v10-quotes.js',
+  './README.md','./supabase.sql',
+  './docs/HOSTING.md','./docs/SUPABASE.md','./docs/SECURITY.md','./docs/PAYMENTS.md','./docs/CHANGELOG.md','./docs/V10_MODULES.md'
 ];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(()=>self.skipWaiting()));
