@@ -1,14 +1,14 @@
 {
-  "name": "Training Arc OS v7 Lucky",
-  "short_name": "ArcOS v7",
+  "name": "Training Arc OS v8 Fire",
+  "short_name": "ArcOS v8",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#050711",
-  "theme_color": "#8b5cf6",
-  "description": "Private secure all-in-one training, nutrition and life OS.",
+  "theme_color": "#fb7185",
+  "description": "Private secure all-in-one athlete, training, nutrition and life OS.",
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='30' fill='%238b5cf6'/%3E%3Ctext x='64' y='78' text-anchor='middle' font-size='42' font-family='Arial' font-weight='900' fill='white'%3ETA%3C/text%3E%3C/svg%3E",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='30' fill='%23fb7185'/%3E%3Ctext x='64' y='78' text-anchor='middle' font-size='42' font-family='Arial' font-weight='900' fill='white'%3ETA%3C/text%3E%3C/svg%3E",
       "sizes": "128x128",
       "type": "image/svg+xml"
     }

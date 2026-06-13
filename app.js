@@ -1,7 +1,7 @@
-/* Training Arc OS v7 — local-first encrypted all-in-one tracker */
-const APP_KEY = "training_arc_os_v7_vault";
-const SETTINGS_KEY = "training_arc_os_v7_settings";
-const LEGACY_KEYS = ["training_arc_os_v6_vault","training_arc_os_v5_vault","training_arc_os_v4_vault","training_arc_os_v3_vault","training_arc_os_v2_vault"];
+/* Training Arc OS v8 — local-first encrypted all-in-one tracker */
+const APP_KEY = "training_arc_os_v8_vault";
+const SETTINGS_KEY = "training_arc_os_v8_settings";
+const LEGACY_KEYS = ["training_arc_os_v7_vault","training_arc_os_v6_vault","training_arc_os_v5_vault","training_arc_os_v4_vault","training_arc_os_v3_vault","training_arc_os_v2_vault"];
 const $ = id => document.getElementById(id);
 const $$ = sel => [...document.querySelectorAll(sel)];
 const todayIso = () => new Date().toISOString().slice(0,10);
@@ -51,7 +51,7 @@ const COMMANDS = [
 
 function seedState(){
   return {
-    meta:{app:"Training Arc OS", version:7, createdAt:new Date().toISOString(), deviceId: uid()},
+    meta:{app:"Training Arc OS", version:8, createdAt:new Date().toISOString(), deviceId: uid()},
     profile:{name:"Filip", height:182, weight:80, age:17, sex:"male"},
     targets:{...DEFAULT_TARGETS},
     days:{}, foods: generateFoodDatabase(), customFoods:[], recipes:defaultRecipes(), customRecipes:[], events:[], stretchLogs:[], futureLetters:[], goals:[], mealPlans:[], groceryItems:[], spendLogs:[], measurements:[], bodyRecovery:[], progressPhotos:[], quests:[], weeklyReviews:[], workouts:[], runs:[], journals:[], tasks:[], habits:[], books:[], exercisePresets:[...EXERCISE_PRESETS],
@@ -79,8 +79,8 @@ function ensureDay(iso=selectedDate){
   return state.days[iso];
 }
 function migrate(){
-  if(!state.meta) state.meta={app:"Training Arc OS", version:7, createdAt:new Date().toISOString(), deviceId:uid()};
-  state.meta.version=7;
+  if(!state.meta) state.meta={app:"Training Arc OS", version:8, createdAt:new Date().toISOString(), deviceId:uid()};
+  state.meta.version=8;
   state.targets={...DEFAULT_TARGETS,...(state.targets||{})};
   state.settings={theme:"dark",cloud:{url:"",key:"",lastPush:"",lastPull:""},email:{reportEmail:"",webhookUrl:""},security:{kdfIterations:300000},planner:{notify:false},...(state.settings||{})};
   state.settings.cloud={url:"",key:"",lastPush:"",lastPull:"",...(state.settings.cloud||{})};
@@ -130,7 +130,7 @@ async function encryptState(payload, password){
   const salt=crypto.getRandomValues(new Uint8Array(16)); const iv=crypto.getRandomValues(new Uint8Array(12)); const iterations=state?.settings?.security?.kdfIterations||300000;
   const key=await deriveKey(password,salt,iterations);
   const data=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,enc.encode(JSON.stringify(payload)));
-  return {app:"TrainingArcOS",version:7,kdf:"PBKDF2-SHA256",iterations,cipher:"AES-GCM-256",salt:bytesToB64(salt),iv:bytesToB64(iv),data:bytesToB64(data),updatedAt:new Date().toISOString(),deviceId:payload?.meta?.deviceId||"unknown"};
+  return {app:"TrainingArcOS",version:8,kdf:"PBKDF2-SHA256",iterations,cipher:"AES-GCM-256",salt:bytesToB64(salt),iv:bytesToB64(iv),data:bytesToB64(data),updatedAt:new Date().toISOString(),deviceId:payload?.meta?.deviceId||"unknown"};
 }
 async function decryptVault(vault,password){
   const key=await deriveKey(password,b64ToBytes(vault.salt),vault.iterations||220000);
@@ -174,10 +174,10 @@ function hydrateControls(){
 function bindEvents(){
   $("vaultPassword").addEventListener("input",updatePasswordMeter);
   $("unlockBtn").onclick=async()=>{ const pass=$("vaultPassword").value; if(!pass||pass.length<4)return toast("Zadej heslo/PIN."); try{ const vault=getStoredVault(); if(!vault)return toast("Vault neexistuje. Vytvoř nový."); state=await decryptVault(vault,pass); vaultPassword=pass; unsafeMode=false; openApp(); toast("Odemčeno."); }catch(e){ toast("Špatné heslo/PIN nebo poškozený vault."); }};
-  $("createVaultBtn").onclick=async()=>{ const pass=$("vaultPassword").value; if(!pass||pass.length<6)return toast("Pro v7 dej aspoň 6 znaků."); if(getStoredVault()&&!confirm("Přepsat existující vault?"))return; state=seedState(); vaultPassword=pass; unsafeMode=false; await saveVault(false); openApp(); toast("V7 secure vault vytvořen."); };
+  $("createVaultBtn").onclick=async()=>{ const pass=$("vaultPassword").value; if(!pass||pass.length<6)return toast("Pro v8 dej aspoň 6 znaků."); if(getStoredVault()&&!confirm("Přepsat existující vault?"))return; state=seedState(); vaultPassword=pass; unsafeMode=false; await saveVault(false); openApp(); toast("V8 secure vault vytvořen."); };
   $("demoVaultBtn").onclick=async()=>{ const pass=$("vaultPassword").value||"demo1234"; state=demoState(); vaultPassword=pass; unsafeMode=false; await saveVault(false); openApp(); toast("Demo vault vytvořen. Heslo: co jsi zadal, nebo demo1234."); };
   $("offlineUnsafeBtn").onclick=()=>{ if(!confirm("Dočasný režim bez šifrování? Jen na test."))return; const raw=localStorage.getItem(APP_KEY+"_unsafe"); state=raw?JSON.parse(raw):seedState(); unsafeMode=true; vaultPassword=""; openApp(); toast("Dočasný nešifrovaný režim."); };
-  $("resetVaultBtn").onclick=()=>{ if(confirm("Smazat lokální data v7 + legacy keys?")){ localStorage.removeItem(APP_KEY); localStorage.removeItem(APP_KEY+"_unsafe"); LEGACY_KEYS.forEach(k=>localStorage.removeItem(k)); location.reload(); }};
+  $("resetVaultBtn").onclick=()=>{ if(confirm("Smazat lokální data v8 + legacy keys?")){ localStorage.removeItem(APP_KEY); localStorage.removeItem(APP_KEY+"_unsafe"); LEGACY_KEYS.forEach(k=>localStorage.removeItem(k)); location.reload(); }};
   $("quickSaveBtn").onclick=()=>saveVault(); $("lockBtn").onclick=()=>location.reload();
   $("themeToggle").onclick=()=>{ state.settings.theme=state.settings.theme==="light"?"dark":"light"; applyTheme(); saveVault(false); };
   $("datePicker").onchange=e=>{ selectedDate=e.target.value||todayIso(); renderAll(); };
@@ -529,7 +529,7 @@ async function requestNotifications(){
   const res=await Notification.requestPermission(); state.settings.planner.notify=res==='granted'; await saveVault(false); toast(res==='granted'?'Notifications povoleny.':'Notifications nepovoleny.');
 }
 function exportIcs(){
-  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Training Arc OS v7//CZ'];
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Training Arc OS v8//CZ'];
   state.events.forEach(e=>{ const dt=(e.date||todayIso()).replaceAll('-','')+'T'+((e.time||'09:00').replace(':','')+'00'); lines.push('BEGIN:VEVENT','UID:'+e.id+'@training-arc-os','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z','DTSTART:'+dt,'SUMMARY:'+icsEscape(e.title),'DESCRIPTION:'+icsEscape((e.type||'')+' '+(e.notes||'')),'END:VEVENT'); });
   lines.push('END:VCALENDAR'); download('training_arc_events_'+todayIso()+'.ics',lines.join('\r\n'));
 }
@@ -624,7 +624,7 @@ function v7Recipes(){
 }
 function v7Migrate(){
   state.mealPlans=state.mealPlans||[]; state.groceryItems=state.groceryItems||[]; state.spendLogs=state.spendLogs||[]; state.measurements=state.measurements||[]; state.bodyRecovery=state.bodyRecovery||[]; state.progressPhotos=state.progressPhotos||[]; state.quests=state.quests||[]; state.weeklyReviews=state.weeklyReviews||[];
-  state.meta.version=7;
+  state.meta.version=8;
   state.recipes=mergeRecipes(mergeRecipes(state.recipes||[], defaultRecipes()), v7Recipes());
   state.foods=mergeFoodDb(state.foods||[], v7FoodExpansion()).slice(0,7777);
   state.exercisePresets=[...new Set([...(state.exercisePresets||[]),...V7_EXERCISE_BOOST])];
@@ -651,8 +651,8 @@ function saveQuest(){ const title=$('questTitle').value.trim(); if(!title)return
 function saveWeeklyReview(){ state.weeklyReviews.unshift({id:uid(),date:selectedDate,score:num($('reviewScore').value),focus:$('reviewFocus').value.trim(),text:$('reviewText').value.trim(),createdAt:new Date().toISOString()}); ['reviewScore','reviewFocus','reviewText'].forEach(id=>$(id).value=''); saveVault(); } window.deleteReview=id=>{state.weeklyReviews=state.weeklyReviews.filter(x=>x.id!==id);saveVault();};
 function renderAchievements(){ const badges=[['🔥','7 food logs',(Object.values(state.days).filter(d=>(d.foodLogs||[]).length).length>=7)],['🏃','30 km week',weekRunKm()>=30],['💪','10 workouts',state.workouts.length>=10],['📚','Reading arc',state.books.some(b=>num(b.current)>50)],['🧘','Stretch stack',state.stretchLogs.length>=7],['🔐','Secure vault',!unsafeMode&&!!vaultPassword],['☁️','Cloud ready',!!supabaseClient],['🏆','Quest finisher',state.quests.some(q=>q.status==='done')],['🥗','Meal prepper',state.mealPlans.length>=7],['🧠','Future self',state.futureLetters.length>=3]]; $('achievementGrid').innerHTML=badges.map(b=>`<div class="badge ${b[2]?'unlocked':''}"><span class="emoji">${b[0]}</span><strong>${escapeHtml(b[1])}</strong><small>${b[2]?'Unlocked':'Locked'}</small></div>`).join(''); }
 function renderHostingLab(){ if(!$('hostingChecklist'))return; const checks=[['Local vault exists',!!localStorage.getItem(APP_KEY)],['HTTPS ready after deploy',location.protocol==='https:'||location.hostname==='localhost'],['Service worker registered','serviceWorker' in navigator],['Supabase config saved',!!(state.settings.cloud?.url&&state.settings.cloud?.key)],['Not using service_role key',!(state.settings.cloud?.key||'').includes('service_role')],['Manifest present',true],['Export backup available',true]]; $('hostingChecklist').innerHTML=checks.map(c=>`<div class="item"><strong><span class="health-dot ${c[1]?'':'warn'}"></span>${escapeHtml(c[0])}</strong><small>${c[1]?'OK':'Needs setup'}</small></div>`).join(''); $('hostingNotes').innerHTML=['Deploy frontend na Vercel/Netlify/GitHub Pages.','Supabase: zapnout Auth + spustit supabase.sql + RLS.','Do browseru jen anon/publishable key, nikdy service_role.','Po deployi otestuj: create vault → cloud sign in → push → mobile pull.'].map(x=>`<div class="coach-tip">${escapeHtml(x)}</div>`).join(''); }
-function runSelfTest(){ const out=[]; out.push('Training Arc OS v7 self-test'); out.push('Date: '+new Date().toISOString()); out.push('LocalStorage: '+(typeof localStorage!=='undefined'?'OK':'missing')); out.push('WebCrypto: '+(crypto?.subtle?'OK':'missing')); out.push('ServiceWorker: '+('serviceWorker' in navigator?'OK':'missing')); out.push('Vault mode: '+(unsafeMode?'unsafe':'encrypted/local-ready')); out.push('Foods loaded: '+(state.foods?.length||0)); out.push('Recipes loaded: '+(allRecipes().length||0)); out.push('Cloud config: '+(state.settings.cloud?.url?'saved':'not set')); $('selfTestResult').textContent=out.join('\n'); }
-async function copyDeployPlan(){ const txt=`Training Arc OS v7 deploy plan\n1) Upload files to GitHub repo.\n2) Import repo in Vercel/Netlify.\n3) Create Supabase project.\n4) Run supabase.sql.\n5) In app Connection Hub, paste URL + anon key.\n6) Sign up/sign in, create encrypted vault, push from PC, pull on mobile/tablet.\n7) Keep service_role key private.`; await navigator.clipboard.writeText(txt); toast('Deploy plan zkopírován.'); }
+function runSelfTest(){ const out=[]; out.push('Training Arc OS v8 self-test'); out.push('Date: '+new Date().toISOString()); out.push('LocalStorage: '+(typeof localStorage!=='undefined'?'OK':'missing')); out.push('WebCrypto: '+(crypto?.subtle?'OK':'missing')); out.push('ServiceWorker: '+('serviceWorker' in navigator?'OK':'missing')); out.push('Vault mode: '+(unsafeMode?'unsafe':'encrypted/local-ready')); out.push('Foods loaded: '+(state.foods?.length||0)); out.push('Recipes loaded: '+(allRecipes().length||0)); out.push('Cloud config: '+(state.settings.cloud?.url?'saved':'not set')); $('selfTestResult').textContent=out.join('\n'); }
+async function copyDeployPlan(){ const txt=`Training Arc OS v8 deploy plan\n1) Upload files to GitHub repo.\n2) Import repo in Vercel/Netlify.\n3) Create Supabase project.\n4) Run supabase.sql.\n5) In app Connection Hub, paste URL + anon key.\n6) Sign up/sign in, create encrypted vault, push from PC, pull on mobile/tablet.\n7) Keep service_role key private.`; await navigator.clipboard.writeText(txt); toast('Deploy plan zkopírován.'); }
 
 
 /* =========================
@@ -672,7 +672,7 @@ function versionHistory(){
 }
 function currentPatchNotes(){
   return [
-    'Přidaná samostatná podstránka Versions / Updates bez zvýšení verze — pořád zůstává v7 Lucky.',
+    'V8 Fire přidává Performance Lab, Motivation Vault, Athlete Toolkit a Plans Lab.',
     'Dashboard dostal rychlý proklik na changelog, aby šlo před hostingem zkontrolovat, co je uvnitř.',
     'Command palette nově umí skočit do Versions / Updates a názvy nových v7 modulů se správně zobrazují v topbaru.',
     'Hosting readiness je víc propojený s changelogem: můžeš copy/exportovat release notes a pak řešit deploy.',
@@ -699,7 +699,7 @@ function renderVersionsPage(){
   $('versionHostingSteps').innerHTML=steps.map(s=>`<div class="version-step"><strong>${s[0]}</strong><h4>${escapeHtml(s[1])}</h4><p>${escapeHtml(s[2])}</p></div>`).join('');
 }
 function changelogText(){
-  return 'Training Arc OS v7 Lucky — changelog\n\n' + versionHistory().map(r=>`${r.v} — ${r.title} [${r.tag}]\n`+r.items.map(x=>' - '+x).join('\n')).join('\n\n') + '\n\nCurrent v7 patch notes\n' + currentPatchNotes().map(x=>' - '+x).join('\n');
+  return 'Training Arc OS v8 Fire — changelog\n\n' + versionHistory().map(r=>`${r.v} — ${r.title} [${r.tag}]\n`+r.items.map(x=>' - '+x).join('\n')).join('\n\n') + '\n\nCurrent v8 notes\n' + currentPatchNotes().map(x=>' - '+x).join('\n');
 }
 async function copyChangelog(){
   await navigator.clipboard.writeText(changelogText());
@@ -708,5 +708,206 @@ async function copyChangelog(){
 function exportChangelog(){
   download('training_arc_os_v7_changelog.txt', changelogText(), 'text/plain');
 }
+
+
+/* =========================
+   V8 FIRE — Athlete OS expansion
+   Big feature layer before hosting / v10.
+========================= */
+const V8_EXERCISE_BOOST = [
+  "Paused incline bench", "Spoto press", "Close-grip bench", "Weighted vest push-ups", "Backpack push-ups", "Clap push-ups", "Depth push-ups", "Pike push-ups",
+  "Weighted chin-ups", "L-sit pull-ups", "Archer pull-ups", "Eccentric high pull-up", "Band transition muscle-up", "Chest-to-bar negative", "Explosive ring row",
+  "Dip support hold", "Deep ring support", "Tempo dips 3-1-1", "Korean dips prep", "Scapular dips", "Straight-bar dip negative",
+  "Cable row neutral", "Meadows row", "Seal row", "Lat prayer pulldown", "Pullover machine", "Kelso shrug", "Trap-3 raise",
+  "Sissy squat assisted", "Reverse Nordic", "Nordic curl assisted", "Spanish squat", "Cyclist squat", "Step-ups", "Copenhagen plank",
+  "Tibialis wall raise", "Pogo jumps", "A-skips", "B-skips", "Hill sprints", "Strides 6×20s", "Bounding", "Jump rope easy",
+  "Breathing walk", "Sauna recovery note", "Cold shower note", "Mobility circuit A", "Mobility circuit B", "Prehab shoulders", "Prehab knees", "Prehab ankles"
+];
+RUN_TYPES.push(
+  {name:"Aerobic base builder", goal:"navýšit objem bez ego tempa", intensity:"Z2 / talk test"},
+  {name:"Police test prep 1k", goal:"rychlost + pacing na 1 km", intensity:"Z4–Z5"},
+  {name:"Strides after easy", goal:"rychlost bez únavy", intensity:"6–10× 15–25 s"},
+  {name:"Cruise intervals", goal:"threshold bez zabití", intensity:"3–6× 5 min"},
+  {name:"Race simulation", goal:"test vybavení, jídla, tempa", intensity:"planned hard"},
+  {name:"Heat adaptation easy", goal:"léto bez přepalu", intensity:"easy, HR cap"},
+  {name:"Treadmill Z2 incline", goal:"kondice bez nárazů", intensity:"incline + low speed"},
+  {name:"Deload run", goal:"udržet rytmus, snížit fatigue", intensity:"20–35 min easy"}
+);
+COMMANDS.push(["Performance Lab","performance"],["Motivation Vault","motivation"],["Athlete Toolkit","athlete"],["Plans / Monetization","plans"]);
+
+function v8FoodExpansion(){
+  const bases = [
+    ["Kuřecí bowl spicy",172,24,10,5,"meal protein","🍛"],["Kuřecí teriyaki",185,24,14,4,"meal protein","🍗"],["Kuřecí paprika",155,23,4,5,"czech protein","🍗"],["Krůtí burger patty",165,23,2,7,"protein","🍔"],["Hovězí chilli",190,20,16,7,"meal protein","🌶️"],["Hovězí ragú",175,19,9,8,"meal protein","🍝"],["Vepřová panenka medailonky",150,23,1,5,"protein","🥩"],["Losos bowl",205,20,12,11,"fish meal","🐟"],["Tuna mayo light",155,24,2,5,"fish protein","🐟"],["Krevety s rýží",140,20,16,2,"fish meal","🦐"],
+    ["Protein overnight oats",135,12,18,2,"breakfast protein","🥣"],["Ovesná kaše whey",125,11,17,2,"breakfast protein","🥣"],["Tvaroh čokoláda",92,14,7,1,"dairy protein","🍫"],["Skyr jahoda",72,11,6,0,"dairy protein","🍓"],["Cottage toast",160,16,18,4,"snack protein","🧀"],["Vaječná omeleta",165,13,2,11,"breakfast protein","🍳"],["Egg white omelette",70,13,2,0,"breakfast protein","🥚"],
+    ["Jasmínová rýže meal prep",130,3,28,0,"carbs","🍚"],["Brambory pečené",115,2,24,2,"carbs","🥔"],["Batáty pečené",105,2,21,2,"carbs","🍠"],["Kuskus",112,4,23,0,"carbs","🍛"],["Bulgur",83,3,19,0,"carbs","🍛"],["Quinoa bowl",120,4,21,2,"carbs","🍲"],["Gnocchi tomato",165,5,33,2,"carbs meal","🍝"],["Tortilla wrap base",300,8,50,7,"carbs","🌯"],
+    ["Kebab fitness bowl",185,18,18,6,"fastfood estimate","🥙"],["Pizza slice šunka",260,13,31,9,"fastfood estimate","🍕"],["Burger homemade lean",220,18,22,7,"fastfood estimate","🍔"],["Burrito gym",190,14,24,5,"fastfood estimate","🌯"],["Sushi salmon",155,7,25,3,"fastfood estimate","🍣"],["Pho chicken",80,7,10,1,"fastfood estimate","🍜"],["Ramen light",115,7,15,3,"fastfood estimate","🍜"],
+    ["Rohlík šunka sýr",245,14,34,7,"school snack","🥖"],["Protein tyčinka",365,32,35,10,"snack protein","🍫"],["Banán pre-run",89,1,23,0,"run fuel","🍌"],["Datle run fuel",282,2,75,0,"run fuel","🌴"],["Gel 25g carbs",100,0,25,0,"run fuel","⚡"],["Ionťák 500ml",120,0,30,0,"run fuel","🥤"],["Rice cakes jam",330,5,76,1,"run fuel","🍘"],
+    ["Svíčková odhad",150,8,18,6,"czech estimate","🍽️"],["Guláš odhad",180,12,12,10,"czech estimate","🍲"],["Koprovka vejce",135,8,13,6,"czech estimate","🍲"],["Rajská s hovězím",145,10,15,5,"czech estimate","🍅"],["Rizoto školní",145,8,23,3,"czech estimate","🍚"],["Těstoviny tuňák",165,13,24,4,"budget meal","🍝"],["Špagety bolognese",175,11,24,6,"meal","🍝"],
+    ["Okurka salát",16,1,3,0,"veg","🥒"],["Rajče",18,1,4,0,"veg","🍅"],["Paprika",31,1,6,0,"veg","🫑"],["Brokolice",34,3,7,0,"veg","🥦"],["Mražená zelenina",45,3,8,0,"veg","🥦"],["Salát mix",18,1,3,0,"veg","🥗"],["Banán",89,1,23,0,"fruit","🍌"],["Jablko",52,0,14,0,"fruit","🍎"],["Borůvky",57,1,14,0,"fruit","🫐"],["Jahody",32,1,8,0,"fruit","🍓"],
+    ["Arašídové máslo",588,25,20,50,"fats","🥜"],["Olivový olej",884,0,0,100,"fats","🫒"],["Avokádo",160,2,9,15,"fats","🥑"],["Mandle",579,21,22,50,"fats","🥜"],["Kešu",553,18,30,44,"fats","🥜"],
+    ["Whey isolate",370,84,4,2,"supplement","🥤"],["Whey concentrate",400,76,8,6,"supplement","🥤"],["Kreatin monohydrát",0,0,0,0,"supplement","⚗️"],["Elektrolyty",35,0,8,0,"supplement","🧂"],["Kolagen drink",70,16,1,0,"supplement","🥤"]
+  ];
+  const variants = ["base","cut","lean","bulk","high protein","race week","pre-run","post-run","post-workout","work shift","school box","meal prep","budget","premium","fast","airfryer","homemade","restaurant estimate","low fat","extra carbs","extra veg","low fiber","high fiber","salted","sweet","spicy","no oil","with oil","large portion","small portion","summer cut","winter bulk","deload day","long run day","upper day","lower day","rest day","night shift","recovery","sick day","travel","simple","family meal","Czech label guess","performance"];
+  const foods=[];
+  for(const b of bases){
+    for(const v of variants){
+      const mult = /bulk|large|winter/.test(v) ? 1.2 : /cut|small|low fat/.test(v) ? .86 : /premium|with oil/.test(v) ? 1.08 : 1;
+      const p = /high protein|post-workout|upper|lower/.test(v) ? 5 : /lean/.test(v) ? 2 : 0;
+      const c = /extra carbs|pre-run|race|long run/.test(v) ? 14 : /cut|low fiber/.test(v) ? -4 : 0;
+      const f = /with oil|premium/.test(v) ? 7 : /no oil|low fat|pre-run/.test(v) ? -4 : 0;
+      const salt = /fastfood|restaurant|salted|czech/i.test(b[5]+' '+v) ? 1.1 : .12;
+      foods.push({id:'v8_'+uid(),preset:true,name:v==='base'?b[0]:`${b[0]} · ${v}`,icon:b[6],category:b[5].split(' ')[0],tags:(b[5]+' v8 fire '+v).split(' '),kcal100:Math.max(0,round(b[1]*mult,0)),protein100:Math.max(0,round(b[2]+p,1)),carbs100:Math.max(0,round(b[3]+c,1)),fat100:Math.max(0,round(b[4]+f,1)),fiber100:b[5].includes('veg')?3:b[5].includes('fruit')?2:b[5].includes('carbs')?2:0,salt100:salt});
+    }
+  }
+  return foods;
+}
+function v8RecipeExpansion(){
+  const templates = [
+    ["Chicken rice performance bowl","meal prep",760,58,96,14,"🍚",["kuře","rýže","zelenina","jogurt dip"],["Okořeň kuře a upeč/pánev.","Rýži uvař a navaž.","Přidej zeleninu a dip bokem."]],
+    ["Skyr oat power jar","breakfast",560,48,74,8,"🥣",["skyr","vločky","banán","whey"],["Smíchej večer do sklenice.","Ráno přidej ovoce.","Na cut uber vločky."]],
+    ["Long run carb stack","run fuel",520,8,118,2,"⚡",["banán","rýžové chlebíčky","med","ionťák"],["Dej 2–3 h před delším během.","Nedávej moc tuku.","Otestuj před závodem."]],
+    ["Post workout shake bowl","post-workout",610,52,78,9,"🥤",["whey","mléko/kefír","vločky","ovoce"],["Rozmixuj.","Vypij/sněz do hodiny po tréninku.","Doplň vodu a sůl po běhu."]],
+    ["Budget tuna pasta","budget",690,50,94,8,"🍝",["těstoviny","tuňák","rajčatová omáčka","sýr light"],["Uvař těstoviny.","Vmíchej tuňáka a omáčku.","Dochut pepř/chilli."]],
+    ["Lean kebab bowl","cut",650,55,74,14,"🥙",["kuřecí gyros","rýže/brambory","salát","jogurt dip"],["Bez hranolek a mayo.","Hodně salátu.","Doplnit protein."]],
+    ["Cottage school wrap","school",520,43,57,12,"🌯",["tortilla","cottage","šunka/kuře","salát"],["Namaž cottage.","Zabal protein a salát.","Vezmi do školy/práce."]],
+    ["Egg rice recovery bowl","recovery",590,32,78,17,"🍳",["rýže","vejce","vývar","sůl"],["Jednoduché, když není chuť.","Doplň tekutiny.","Neřeš perfekcionismus."]],
+    ["Beef potato dinner","dinner",760,54,72,22,"🥩",["libové hovězí","brambory","zelenina","olej"],["Opeč maso.","Brambory peč/vař.","Přidej zeleninu."]],
+    ["Protein pancakes 2.0","breakfast",640,50,75,14,"🥞",["vločky","vejce","whey","banán","skyr"],["Rozmixuj.","Smaž na nepřilnavé pánvi.","Top skyr/ovoce."]],
+    ["Sushi rice salmon bowl","meal",720,42,92,20,"🍣",["sushi rýže","losos/tuňák","okurka","sojovka"],["Uvař rýži.","Přidej protein.","Nepřepal sojovku kvůli soli."]],
+    ["Shift survival box","work",800,58,105,15,"🎒",["wrap","protein drink","banán","rice cakes"],["Připrav dopředu.","Jez po blocích.","Cíl: nevynechat protein."]]
+  ];
+  const variants=["base","cut","bulk","race week","school","work shift","cheap","premium","high protein","pre-run","post-run","rest day","upper day","lower day","summer","winter","fast prep","no cook","airfryer","family portion","small appetite","sick day","meal prep x3","late night"];
+  const out=[];
+  for(const t of templates){
+    for(const v of variants){
+      const mult=/bulk|family/.test(v)?1.18:/cut|small/.test(v)?.86:1;
+      const p=/high protein|upper|lower/.test(v)?8:0;
+      const c=/pre-run|race|post-run/.test(v)?18:/cut/.test(v)?-10:0;
+      const f=/cut|pre-run/.test(v)?-4:/premium/.test(v)?5:0;
+      out.push(recipe(v==='base'?t[0]:`${t[0]} · ${v}`, t[1], Math.max(0,Math.round(t[2]*mult)), Math.max(0,Math.round(t[3]+p)), Math.max(0,Math.round(t[4]+c)), Math.max(0,Math.round(t[5]+f)), t[7], [...t[8], `V8 varianta: ${v}. Uprav gramáž podle cíle.`], t[6]));
+    }
+  }
+  return out;
+}
+function defaultMotivationQuotes(){
+  return [
+    "You do not need motivation. You need the next rep.", "Minimum day beats zero day.", "Když není ideální den, vyhraje plán B.", "Easy runs build monsters quietly.", "Strength is skill plus patience.", "Jídlo není morálka, jídlo je palivo.", "Log it, learn it, level up.", "No ego on sick days. Ego is for race day.", "The athlete who recovers wins twice.", "Discipline is just remembering what you want most.", "One clean set. One honest kilometer. One better day.", "Future you is watching today's boring basics.", "You are not behind. You are stacking data.", "Cut the drama, keep the streak.", "Strong body, calm mind, clear plan.", "Don't quit on the day that teaches you the most.", "Zone 2 is not weak. It is base-building violence.", "Protein, sleep, steps, reps. Repeat.", "When in doubt, do the sustainable version.", "Your comeback already started. Keep receipts."
+  ];
+}
+function v8Migrate(){
+  state.meta.version=8; state.meta.label='v8 Fire';
+  state.foods=mergeFoodDb(state.foods||[], v8FoodExpansion()).slice(0,15000);
+  state.recipes=mergeRecipes(mergeRecipes(state.recipes||[], v8RecipeExpansion()), defaultRecipes());
+  state.exercisePresets=[...new Set([...(state.exercisePresets||[]),...V8_EXERCISE_BOOST])];
+  state.motivationQuotes=state.motivationQuotes||defaultMotivationQuotes();
+  state.identityRules=state.identityRules||['Jsem člověk, který zapíše data i když den nebyl perfect.','Nejdu maxovat, když tělo hlásí recovery.','Protein, spánek a kroky jsou moje daily basics.'];
+  state.disciplineContracts=state.disciplineContracts||[]; state.sessionGoals=state.sessionGoals||[]; state.gearItems=state.gearItems||[];
+  state.planConfig=state.planConfig||{currentPlan:'Personal Free',price:25,notes:'V8 paywall-ready, real payments later via Stripe/serverless.'};
+  state.protocolLogs=state.protocolLogs||[];
+}
+const __v8BaseMigrate=migrate; migrate=function(){ __v8BaseMigrate(); v8Migrate(); };
+const __v8BaseRenderAll=renderAll; renderAll=function(){ __v8BaseRenderAll(); renderV8All(); };
+function renderV8All(){ if(!state)return; renderPerformanceLab(); renderMotivation(); renderAthleteToolkit(); renderPlansLab(); }
+const __v8BaseBindEvents=bindEvents; bindEvents=function(){ __v8BaseBindEvents(); bindV8Events(); };
+function bindV8Events(){ const safe=(id,fn)=>{const el=$(id); if(el) fn(el);};
+  safe('generatePlanBtn',el=>el.onclick=generateWeekPlan); safe('saveSessionGoalBtn',el=>el.onclick=saveSessionGoal);
+  safe('randomQuoteBtn',el=>el.onclick=randomMotivationQuote); safe('copyQuoteBtn',el=>el.onclick=copyMotivationQuote); safe('saveQuoteBtn',el=>el.onclick=saveCustomQuote); safe('saveIdentityRuleBtn',el=>el.onclick=saveIdentityRule); safe('saveContractBtn',el=>el.onclick=saveContract);
+  safe('generateProtocolBtn',el=>el.onclick=generateProtocol); safe('generateSkillBtn',el=>el.onclick=generateSkillProgression); safe('saveGearBtn',el=>el.onclick=saveGearItem);
+  safe('savePlanBtn',el=>el.onclick=savePlanConfig); safe('copyPricingBtn',el=>el.onclick=copyPricingPlan);
+}
+const __v8BaseSwitchView=switchView; switchView=function(view){ __v8BaseSwitchView(view); const map={performance:'Performance Lab',motivation:'Motivation Vault',athlete:'Athlete Toolkit',plans:'Plans & Monetization'}; if(map[view]&&$('viewTitle')) $('viewTitle').textContent=map[view]; };
+
+function readinessScore(){ const d=ensureDay(); const sleep=num(d.sleep,0), mood=num(d.mood,0), energy=num(d.energy,0), soreness=num(d.soreness,0), load=trainingLoad(); let score=50; score += clamp((sleep-6.5)*8,-16,16); score += mood?clamp((mood-5)*4,-16,20):0; score += energy?clamp((energy-5)*4,-16,20):0; score -= soreness?clamp((soreness-4)*5,-10,25):0; score -= load>70?18:load>45?10:0; return Math.round(clamp(score,5,100)); }
+function readinessTips(score=readinessScore()){ const d=ensureDay(); const tips=[]; if(score>=78) tips.push('Green light: můžeš dát kvalitní workout / tempo, ale pořád drž techniku.'); else if(score>=55) tips.push('Yellow-green: normální trénink, žádné ego maxy.'); else if(score>=35) tips.push('Yellow: drž easy běh, techniku nebo lehčí pumpu.'); else tips.push('Red-ish: recovery den, chůze, mobilita, jídlo, spánek.'); if(num(d.sleep)<7) tips.push('Spánek je dnes limiter — radši uber intenzitu než objem i intenzitu najednou.'); if(num(d.soreness)>6) tips.push('Soreness vysoká: dej mobility, flush, nebo jinou partii.'); if(weekRunKm()>state.targets.runKm*1.1) tips.push('Run volume je nad cílem týdne — další běh radši recovery/easy.'); if(trainingLoad()>60) tips.push('Dnešní load už je vysoký. Další session má být jen pokud fakt dává smysl.'); return tips; }
+function renderPerformanceLab(){ if(!$('v8Readiness'))return; const score=readinessScore(); $('v8Readiness').innerHTML=`<span>readiness</span><strong>${score}</strong><small>${score>=78?'attack day':score>=55?'solid day':score>=35?'controlled day':'recovery day'}</small>`; $('v8ReadinessTips').innerHTML=readinessTips(score).map(x=>`<div class="coach-tip">${escapeHtml(x)}</div>`).join(''); renderSessionGoals(); renderRaceChecklist(); renderInterferenceAdvisor(); }
+function generateWeekPlan(){ const goal=$('trainingGoal').value, days=Math.max(2,Math.min(10,num($('trainingDays').value,6))), focus=$('trainingFocus').value, min=num($('trainingMinutes').value,75); const templates={
+  'Hybrid: gym + running':['Upper + easy run','Lower easy + mobility','Tempo/interval run','Upper strength','Long run','Lower accessories','Rest / walk'],
+  '10 km sub 60':['Easy Z2','Gym upper','Tempo blocks','Easy + strides','Rest/mobility','Long run','Recovery walk'],
+  '5 km speed':['Easy + strides','Upper gym','VO2 intervals','Lower light','Tempo short','Long easy','Rest'],
+  'Muscle-up technique':['Pull power','Dip power','Transition drill','Upper hypertrophy','Cali technique','Easy run','Rest'],
+  'Hypertrophy lean bulk':['Upper heavy','Lower','Upper pump','Easy run','Upper volume','Lower posterior','Rest'],
+  'Race week taper':['Easy 30','Strides','Rest/mobility','Shakeout','Race','Walk/recovery','Easy optional'],
+  'Recovery week':['Walk + mobility','Upper deload','Easy run','Mobility','Lower deload','Recovery jog','Rest']
+}; const base=templates[goal]||templates['Hybrid: gym + running']; const selected=Array.from({length:days},(_,i)=>base[i%base.length]); $('generatedPlan').innerHTML=selected.map((x,i)=>`<div class="plan-day"><strong>Day ${i+1}</strong><span>${escapeHtml(x)}</span><small>${focus} · cca ${min} min max</small></div>`).join(''); }
+function saveSessionGoal(){ const text=$('preSessionGoal').value.trim(); if(!text)return toast('Napiš intention.'); state.sessionGoals.unshift({id:uid(),date:selectedDate,type:$('preSessionType').value,text,done:false,createdAt:new Date().toISOString()}); $('preSessionGoal').value=''; saveVault(); }
+function renderSessionGoals(){ if(!$('sessionGoalList'))return; $('sessionGoalList').innerHTML=(state.sessionGoals||[]).slice(0,30).map(g=>`<div class="item ${g.done?'doneish':''}"><div class="item-head"><div><strong>${escapeHtml(g.date)} · ${escapeHtml(g.type)}</strong><small>${escapeHtml(g.text)}</small></div><div class="item-actions"><button class="btn tiny ghost" onclick="toggleSessionGoal('${g.id}')">${g.done?'Undo':'Done'}</button><button class="btn tiny ghost danger" onclick="deleteSessionGoal('${g.id}')">×</button></div></div></div>`).join('')||'<div class="item muted">Žádné intentions.</div>'; }
+window.toggleSessionGoal=id=>{const g=state.sessionGoals.find(x=>x.id===id); if(g)g.done=!g.done; saveVault();}; window.deleteSessionGoal=id=>{state.sessionGoals=state.sessionGoals.filter(x=>x.id!==id); saveVault();};
+function renderRaceChecklist(){ if(!$('raceChecklist'))return; const items=['Boty + ponožky','Číslo / registrace','Gel / voda plán','Snídaně otestovaná','Warm-up 10–15 min','Strides 3–5×','Nezačít moc rychle','Cooldown + jídlo']; $('raceChecklist').innerHTML=items.map(x=>`<label class="check-card"><input type="checkbox"> <span>${escapeHtml(x)}</span></label>`).join(''); }
+function renderInterferenceAdvisor(){ if(!$('interferenceAdvisor'))return; const d=ensureDay(); const tips=[]; if(state.workouts.some(w=>w.date===selectedDate&&/Lower/i.test(w.type)) && state.runs.some(r=>r.date===selectedDate&&num(r.rpe)>6)) tips.push('Lower + hard run v jednom dni = vysoká interference. Další den easy/recovery.'); if(num(d.soreness)>6) tips.push('Soreness >6: speed/plyo radši ne. Dej easy run nebo upper pump.'); if(!tips.length) tips.push('Zatím OK: odděluj hard lower a hard run aspoň časem/jídlem/spánkem.'); tips.push('Priorita týdne rozhoduje: když chceš běh PR, lower drž spíš controlled. Když chceš sílu, intervaly nedávej po těžkých nohách.'); $('interferenceAdvisor').innerHTML=tips.map(x=>`<div class="coach-tip">${escapeHtml(x)}</div>`).join(''); }
+
+function renderMotivation(){ if(!$('motivationQuote'))return; if(!$('motivationQuote').dataset.loaded){ randomMotivationQuote(false); $('motivationQuote').dataset.loaded='1'; } $('customQuoteList').innerHTML=(state.motivationQuotes||[]).slice(20).map((q,i)=>`<button class="chip" onclick="removeCustomQuote(${i+20})">${escapeHtml(q.slice(0,38))}</button>`).join('')||'<span class="chip">Přidej vlastní citát</span>'; renderIdentityRules(); renderContracts(); renderBadDayProtocol(); }
+function randomMotivationQuote(save=true){ const qs=state?.motivationQuotes||defaultMotivationQuotes(); const q=qs[Math.floor(Math.random()*qs.length)]||'Do the next rep.'; if($('motivationQuote')) $('motivationQuote').textContent='“'+q+'”'; if(save) toast('Quote loaded.'); }
+async function copyMotivationQuote(){ await navigator.clipboard.writeText(($('motivationQuote')?.textContent||'').replace(/[“”]/g,'')); toast('Quote copied.'); }
+function saveCustomQuote(){ const q=$('newQuoteText').value.trim(); if(!q)return; state.motivationQuotes.push(q); $('newQuoteText').value=''; saveVault(); }
+window.removeCustomQuote=i=>{ state.motivationQuotes.splice(i,1); saveVault(); };
+function saveIdentityRule(){ const x=$('identityRuleInput').value.trim(); if(!x)return; state.identityRules.unshift(x); $('identityRuleInput').value=''; saveVault(); }
+function renderIdentityRules(){ if(!$('identityRules'))return; $('identityRules').innerHTML=(state.identityRules||[]).map((x,i)=>`<div class="item"><div class="item-head"><strong>${escapeHtml(x)}</strong><button class="btn tiny ghost danger" onclick="deleteIdentityRule(${i})">×</button></div></div>`).join(''); }
+window.deleteIdentityRule=i=>{state.identityRules.splice(i,1); saveVault();};
+function saveContract(){ const title=$('contractTitle').value.trim(); if(!title)return toast('Zadej název contractu.'); state.disciplineContracts.unshift({id:uid(),title,deadline:$('contractDeadline').value,text:$('contractText').value.trim(),createdAt:new Date().toISOString(),done:false}); ['contractTitle','contractDeadline','contractText'].forEach(id=>$(id).value=''); saveVault(); }
+function renderContracts(){ if(!$('contractList'))return; $('contractList').innerHTML=(state.disciplineContracts||[]).map(c=>`<div class="item ${c.done?'doneish':''}"><div class="item-head"><div><strong>${escapeHtml(c.title)}</strong><small>${c.deadline||'no deadline'}</small><p>${escapeHtml(c.text)}</p></div><div class="item-actions"><button class="btn tiny ghost" onclick="toggleContract('${c.id}')">${c.done?'Undo':'Done'}</button><button class="btn tiny ghost danger" onclick="deleteContract('${c.id}')">×</button></div></div></div>`).join('')||'<div class="item muted">Žádné contracty.</div>'; }
+window.toggleContract=id=>{const c=state.disciplineContracts.find(x=>x.id===id); if(c)c.done=!c.done; saveVault();}; window.deleteContract=id=>{state.disciplineContracts=state.disciplineContracts.filter(x=>x.id!==id); saveVault();};
+function renderBadDayProtocol(){ if(!$('badDayProtocol'))return; const arr=['Minimum: zapsat váhu/jídlo nebo krátkou poznámku.','10 min chůze nebo mobilita místo nuly.','Protein target zjednoduš: skyr/tvaroh/whey/vejce.','Žádné rozhodování o konci plánu ve špatný den.','Zítra jen návrat do systému, žádné trestání.']; $('badDayProtocol').innerHTML=arr.map(x=>`<div class="coach-tip">${escapeHtml(x)}</div>`).join(''); }
+
+function renderAthleteToolkit(){ if(!$('sportChecklistTemplates'))return; renderGearList(); renderSportChecklistTemplates(); }
+function generateProtocol(){ const type=$('protocolType').value, minutes=num($('protocolMinutes').value,12); const db={
+  'tight calves / shins':['2 min easy walk','15× tibialis raises','15× calf raise straight knee','15× calf raise bent knee','60 s soleus stretch each side','foot rolling 1–2 min'],
+  'sore upper body':['5 min easy bike/walk','scap circles 2×10','band pull-aparts 2×15','doorway pec stretch','lat prayer stretch','nasal breathing'],
+  'low sleep':['20–40 min easy movement','no max lifts','caffeine cutoff earlier','extra carbs + fluids','sleep downshift evening'],
+  'rýma / cold easy mode':['talk test only','no intervals','warm clothes, nasal breathing','shorter route loop','stop if chest symptoms/fever'],
+  'pre-race day':['20–30 min easy','3–5 strides','prepare kit','simple carbs','early sleep, no experiments'],
+  'post-long-run':['walk cooldown','carbs + protein','electrolytes','calves/hips mobility','no hard lower next day'],
+  'heavy leg day tomorrow':['today no hill sprints','mobility hips/ankles','protein + carbs','sleep priority','keep run easy']
+}; const steps=db[type]||db['low sleep']; $('protocolResult').innerHTML=`<article class="routine-card"><strong>${escapeHtml(type)}</strong><small>${minutes} min protocol</small><ol>${steps.map(s=>`<li>${escapeHtml(s)}</li>`).join('')}</ol><button class="btn tiny primary" onclick="logProtocol('${escapeAttr(type)}')">Log protocol</button></article>`; }
+window.logProtocol=type=>{state.protocolLogs.unshift({id:uid(),date:selectedDate,type,createdAt:new Date().toISOString()}); saveVault();};
+function generateSkillProgression(){ const skill=$('skillSelect').value, lvl=$('skillLevel').value; const map={
+  'Clean muscle-up':['False grip/support prep','High pull-ups 4×3–5','Explosive dips 4×5–8','Low bar transition drill 5×3','1–3 clean attempts while fresh'],
+  '50+ push-ups':['Strict sets submax 4×15–25','Weighted push-ups 3×6–10','Tempo push-ups 2×AMRAP leaving 2 RIR','Grease-the-groove easy sets','Retest every 2–3 weeks'],
+  '10 km sub 60':['3× easy Z2','1× tempo/cruise intervals','1× long run','strides after easy','increase weekly km slowly'],
+  '1 km sub 3:30':['200–400m repeats','tempo support','easy volume','strides/hill sprints','pace practice: controlled first 400'],
+  'Pull-up power':['Explosive pull-ups','Weighted pull-ups low reps','Chest-to-bar practice','Rows + lats volume','Scap control'],
+  'Running base':['easy frequency','long run gradually','keep hard days hard/easy easy','sleep + carbs','track HR drift']
+}; const steps=map[skill]||map['Running base']; $('skillResult').innerHTML=steps.map((x,i)=>`<div class="coach-tip"><strong>${i+1}.</strong> ${escapeHtml(x)} <small>${escapeHtml(lvl)}</small></div>`).join(''); }
+function saveGearItem(){ const name=$('gearName').value.trim(); if(!name)return; state.gearItems.unshift({id:uid(),name,qty:$('gearQty').value.trim(),category:$('gearCategory').value,rebuy:$('gearRebuy').value,notes:$('gearNotes').value.trim(),createdAt:new Date().toISOString()}); ['gearName','gearQty','gearRebuy','gearNotes'].forEach(id=>$(id).value=''); saveVault(); }
+function renderGearList(){ if(!$('gearList'))return; $('gearList').innerHTML=(state.gearItems||[]).map(g=>`<div class="item"><div class="item-head"><div><strong>${escapeHtml(g.category)} · ${escapeHtml(g.name)}</strong><small>${escapeHtml(g.qty||'')} · rebuy ${g.rebuy||'—'}</small><p>${escapeHtml(g.notes||'')}</p></div><button class="btn tiny ghost danger" onclick="deleteGearItem('${g.id}')">×</button></div></div>`).join('')||'<div class="item muted">Zatím žádné gear/supp items.</div>'; }
+window.deleteGearItem=id=>{state.gearItems=state.gearItems.filter(x=>x.id!==id); saveVault();};
+function renderSportChecklistTemplates(){ const lists=[['Gym bag',['ručník','láhev','opasek/straps','sluchátka','plán workoutu']],['Run kit',['boty','hodinky','reflexní prvek','gel/voda','podle počasí vrstva']],['Recovery',['protein','elektrolyty','sprcha','mobilita 8 min','spánek plan']],['School/work shift',['meal box','protein snack','voda','nabíječka','čas na kroky']]]; $('sportChecklistTemplates').innerHTML=lists.map(l=>`<div class="check-card vertical"><strong>${escapeHtml(l[0])}</strong>${l[1].map(x=>`<label><input type="checkbox"> ${escapeHtml(x)}</label>`).join('')}</div>`).join(''); }
+
+function planDefinitions(){ return [
+  {name:'Personal Free',price:'0 Kč',tag:'solo',features:['Local secure vault','All tracking modules','Export/import','Manual backup','No paid backend needed']},
+  {name:'Pro Athlete',price:'25–49 Kč/mo',tag:'future',features:['Cloud sync convenience','Advanced analytics','More AI coach templates','Email/webhook automations','Priority presets']},
+  {name:'Elite OS',price:'79–149 Kč/mo',tag:'future',features:['Team/coach sharing','Server notifications','Stripe billing','AI endpoint','Advanced imports/API']}
+]; }
+function renderPlansLab(){ if(!$('planCards'))return; const defs=planDefinitions(); $('planCards').innerHTML=defs.map(p=>`<article class="plan-card glass"><span class="tag">${escapeHtml(p.tag)}</span><h3>${escapeHtml(p.name)}</h3><strong>${escapeHtml(p.price)}</strong><ul>${p.features.map(f=>`<li>${escapeHtml(f)}</li>`).join('')}</ul></article>`).join(''); $('currentPlan').value=state.planConfig.currentPlan||'Personal Free'; $('planPrice').value=state.planConfig.price||25; $('planFeatureMatrix').innerHTML=defs.map(p=>`<div class="item"><strong>${escapeHtml(p.name)}</strong><small>${p.features.map(escapeHtml).join(' · ')}</small></div>`).join(''); const checklist=['Keep core app useful free/personal.','Real payments: Stripe Checkout or Paddle via serverless endpoint.','Never put Stripe secret key in frontend.','Supabase stores user plan after webhook verifies payment.','Feature gates must be server-trusted for public product; local gates are only UI convenience.']; $('stripeChecklist').innerHTML=checklist.map(x=>`<div class="coach-tip">${escapeHtml(x)}</div>`).join(''); }
+function savePlanConfig(){ state.planConfig.currentPlan=$('currentPlan').value; state.planConfig.price=num($('planPrice').value,25); saveVault(); toast('Plan config uložen.'); }
+async function copyPricingPlan(){ const txt=planDefinitions().map(p=>`${p.name} — ${p.price}\n`+p.features.map(f=>' - '+f).join('\n')).join('\n\n')+'\n\nV8 note: real checkout later via Stripe/serverless + Supabase webhook.'; await navigator.clipboard.writeText(txt); toast('Pricing plan copied.'); }
+
+function versionHistory(){
+  return [
+    {v:'v1',title:'Core prototype',tag:'foundation',items:['Local-first dashboard','Basic calories, gym and run logs','Simple graphs, PR board, export/import','PIN lock starter']},
+    {v:'v2',title:'Premium Life OS',tag:'secure vault',items:['AES-GCM encrypted vault concept','Life OS modules: journal, mood, chores, books','Better analytics and AI-style coach tips','Supabase cloud-ready architecture']},
+    {v:'v3',title:'All-in-one training',tag:'calculators',items:['Food calculator per 100 g → portion grams','Custom food database','Gym presets based on your style','Running types + 1RM, VO2max, BMI, TDEE, pace tools']},
+    {v:'v4',title:'Media + import',tag:'email backup',items:['Email/webhook reports','Custom foods with images','Expanded food presets','Workout history import for presets']},
+    {v:'v5',title:'Supreme sync build',tag:'cloud/security',items:['Supabase login/sync hub','Security center and password change','1000+ generated food presets','Meal builder + hosting-ready PWA base']},
+    {v:'v6',title:'Titan expansion',tag:'life planning',items:['Recipes and custom recipes','Planner/timeable events + ICS export','MyFutureSelf letters/goals','Stretching and recovery routines']},
+    {v:'v7',title:'Lucky Number giga build',tag:'hosting-ready',items:['4000+ food presets and performance meal templates','Weekly meal planner, grocery list and spending tracker','Body vault, progress photos, quests and achievements','Hosting Lab, Connection Hub and version/update subpage']},
+    {v:'v8',title:'Fire Athlete OS',tag:'current',items:['9000+ food presets and 300+ generated recipe templates','Performance Lab with readiness, periodization and race checklist','Motivation Vault with quotes, identity rules and discipline contracts','Athlete Toolkit with protocols, gear/supp inventory and skill progressions','Plans & Monetization architecture for future free/pro/elite versions']}
+  ];
+}
+function currentPatchNotes(){ return ['V8 je velký feature drop před hostingem/v10: nové sportovní moduly místo jen design patche.','Přidaný Performance Lab pro readiness score, weekly plan generator, race checklist a hybrid interference advisor.','Přidaný Motivation Vault: quote engine, vlastní citáty, identity rules, bad-day protocol a discipline contracts.','Přidaný Athlete Toolkit: protocol generator, skill progressions, gear/supp inventory a sport checklist templates.','Přidaný Plans & Monetization Lab pro budoucí free/pro/elite verze. Reálné platby jsou připravené koncepčně, ale bezpečně až přes backend/serverless.','Rozšířená food databáze a recepty: pořád orientační, etiketa a vlastní vážení má přednost.']; }
+function renderVersionsPage(){
+  if(!$('versionTimeline')) return;
+  const allFoods=(state.foods||[]).length+(state.customFoods||[]).length; const recipes=allRecipes();
+  if($('versionFoodCount')) $('versionFoodCount').textContent=fmt(allFoods);
+  if($('versionRecipeCount')) $('versionRecipeCount').textContent=fmt(recipes.length||0);
+  if($('versionExerciseCount')) $('versionExerciseCount').textContent=fmt((state.exercisePresets||[]).length);
+  if($('versionModuleCount')) $('versionModuleCount').textContent=fmt($$('.view').length);
+  $('versionTimeline').innerHTML=versionHistory().map((r,i)=>`<article class="release-card ${r.v==='v8'?'current':''}"><div class="release-index">${i+1}</div><div><div class="item-head"><div><span class="tag">${escapeHtml(r.tag)}</span><h3>${escapeHtml(r.v)} · ${escapeHtml(r.title)}</h3></div>${r.v==='v8'?'<span class="status-pill">current</span>':''}</div><ul>${r.items.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul></div></article>`).join('');
+  $('currentPatchNotes').innerHTML=currentPatchNotes().map(x=>`<div class="coach-tip">${escapeHtml(x)}</div>`).join('');
+  const steps=[['1','GitHub repo','Nahraj aktuální v8 soubory do repa.'],['2','Vercel / Netlify','Deploy static appku, automatické HTTPS.'],['3','Supabase','Spusť supabase.sql, zapni Auth/RLS, zkopíruj URL + anon key.'],['4','PC → mobile test','Create vault → sign in → push → otevřít na mobilu → pull.'],['5','Paid later','Pokud chceš placené verze, přidat Stripe/Paddle přes serverless endpoint + Supabase webhook.']];
+  $('versionHostingSteps').innerHTML=steps.map(s=>`<div class="version-step"><strong>${s[0]}</strong><h4>${escapeHtml(s[1])}</h4><p>${escapeHtml(s[2])}</p></div>`).join('');
+}
+function changelogText(){ return 'Training Arc OS v8 Fire — changelog\n\n' + versionHistory().map(r=>`${r.v} — ${r.title} [${r.tag}]\n`+r.items.map(x=>' - '+x).join('\n')).join('\n\n') + '\n\nCurrent v8 notes\n' + currentPatchNotes().map(x=>' - '+x).join('\n'); }
+function exportChangelog(){ download('training_arc_os_v8_changelog.txt', changelogText(), 'text/plain'); }
+window.allRecipes=allRecipes;
 
 init();

@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#050711" />
-  <meta name="description" content="Training Arc OS v7 — secure private all-in-one training, nutrition and life tracker." />
-  <title>Training Arc OS v7</title>
+  <meta name="description" content="Training Arc OS v8 — secure private all-in-one training, nutrition and life tracker." />
+  <title>Training Arc OS v8</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -45,10 +45,10 @@
       </article>
 
       <aside class="glass lock-side">
-        <p class="eyebrow">v7 lucky upgrade</p>
+        <p class="eyebrow">v8 fire upgrade</p>
         <h2>Premium Life + Training OS</h2>
         <ul class="feature-list">
-          <li>4000+ food presetů + custom fotky</li>
+          <li>9000+ food presetů + custom fotky</li>
           <li>Supabase login/sync pro mobil/tablet/PC</li>
           <li>Email/webhook reporty a encrypted backup</li>
           <li>Gym presets, běžecké typy, PR, kalkulačky</li>
@@ -64,7 +64,7 @@
         <div class="brand-mark mini">TA</div>
         <div>
           <strong>Training Arc OS</strong>
-          <span>v7 Lucky</span>
+          <span>v8 Fire</span>
         </div>
       </div>
       <nav class="nav" id="nav">
@@ -81,6 +81,10 @@
         <button class="nav-btn" data-view="mealplan">Meal Plan</button>
         <button class="nav-btn" data-view="body">Body & Recovery</button>
         <button class="nav-btn" data-view="quests">Quests</button>
+        <button class="nav-btn" data-view="performance">Performance Lab</button>
+        <button class="nav-btn" data-view="motivation">Motivation</button>
+        <button class="nav-btn" data-view="athlete">Athlete Toolkit</button>
+        <button class="nav-btn" data-view="plans">Plans</button>
         <button class="nav-btn" data-view="hosting">Hosting Lab</button>
         <button class="nav-btn" data-view="analytics">Analytics</button>
         <button class="nav-btn" data-view="connections">Connection Hub</button>
@@ -118,6 +122,8 @@
                 <button class="btn ghost" data-jump="gym">Log workout</button>
                 <button class="btn ghost" data-jump="running">Log běh</button>
                 <button class="btn ghost" data-jump="planner">Planner</button>
+                <button class="btn ghost" data-jump="performance">Performance</button>
+                <button class="btn ghost" data-jump="motivation">Motivation</button>
                 <button class="btn ghost" data-jump="recovery">Stretch</button>
                 <button class="btn ghost" data-jump="mealplan">Meal plan</button>
                 <button class="btn ghost" data-jump="quests">Quest board</button>
@@ -485,6 +491,111 @@
         <section class="panel glass"><div class="panel-head"><h3>Achievement engine</h3><span class="tag">auto badges</span></div><div id="achievementGrid" class="badge-grid"></div></section>
       </section>
 
+
+      <section id="performance" class="view">
+        <div class="v8-hero glass">
+          <div>
+            <p class="eyebrow">v8 athlete intelligence</p>
+            <h1>Performance Lab <span>readiness · periodization · race day</span></h1>
+            <p class="lead">Rychlý coach cockpit pro rozhodování: kdy tlačit, kdy dát easy, co jet tento týden a jak nepřepálit hybrid grind.</p>
+          </div>
+          <div id="v8Readiness" class="readiness-card">—</div>
+        </div>
+        <div class="grid two">
+          <section class="panel glass accent-panel">
+            <div class="panel-head"><h3>Readiness & load coach</h3><span class="tag">auto from today</span></div>
+            <div id="v8ReadinessTips" class="coach-list"></div>
+            <div class="glowline"></div>
+            <p class="small muted">Bere dnešní spánek, mood, energy, soreness a tréninkovou zátěž. Není to medical advice, jen sportovní decision helper.</p>
+          </section>
+          <section class="panel glass">
+            <div class="panel-head"><h3>Periodization generator</h3><span class="tag">weekly plan</span></div>
+            <div class="form-grid compact">
+              <label>Cíl<select id="trainingGoal"><option>Hybrid: gym + running</option><option>10 km sub 60</option><option>5 km speed</option><option>Muscle-up technique</option><option>Hypertrophy lean bulk</option><option>Race week taper</option><option>Recovery week</option></select></label>
+              <label>Tréninkové dny<input id="trainingDays" type="number" min="2" max="10" value="6"></label>
+              <label>Focus<select id="trainingFocus"><option>balanced</option><option>run priority</option><option>gym priority</option><option>recovery priority</option></select></label>
+              <label>Čas/session min<input id="trainingMinutes" type="number" min="20" max="180" value="75"></label>
+            </div>
+            <button id="generatePlanBtn" class="btn primary">Generate week plan</button>
+            <div id="generatedPlan" class="plan-grid"></div>
+          </section>
+        </div>
+        <div class="grid two">
+          <section class="panel glass">
+            <div class="panel-head"><h3>Pre-session intention</h3><span class="tag">mental lock-in</span></div>
+            <div class="form-grid compact">
+              <label>Typ<select id="preSessionType"><option>Gym</option><option>Run</option><option>Mobility</option><option>Study</option><option>Recovery</option></select></label>
+              <label>Intention<input id="preSessionGoal" placeholder="např. clean reps, no ego, easy HR"></label>
+            </div>
+            <button id="saveSessionGoalBtn" class="btn primary">Uložit intention</button>
+            <div id="sessionGoalList" class="list tall"></div>
+          </section>
+          <section class="panel glass">
+            <div class="panel-head"><h3>Race / event checklist</h3><span class="tag">ready ritual</span></div>
+            <div id="raceChecklist" class="check-grid"></div>
+            <div class="glowline"></div>
+            <div class="panel-head"><h3>Hybrid interference advisor</h3><span class="tag">gym × run</span></div>
+            <div id="interferenceAdvisor" class="coach-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="motivation" class="view">
+        <div class="v8-hero glass motivation-hero">
+          <div>
+            <p class="eyebrow">discipline engine</p>
+            <h1>Motivation Vault <span>quotes · identity · contracts</span></h1>
+            <p class="lead">Když se nechce, tady není feel-good řeč. Tady je systém, připomenutí identity a další rep.</p>
+          </div>
+          <div class="quote-orb">🔥</div>
+        </div>
+        <div class="grid two">
+          <section class="panel glass accent-panel">
+            <div class="panel-head"><h3>Quote of the moment</h3><span class="tag">random</span></div>
+            <blockquote id="motivationQuote" class="mega-quote">—</blockquote>
+            <div class="button-row wrap"><button id="randomQuoteBtn" class="btn primary">Random quote</button><button id="copyQuoteBtn" class="btn ghost">Copy</button></div>
+            <div class="input-row"><input id="newQuoteText" placeholder="Vlastní citát / věta co tě nakopne"><button id="saveQuoteBtn" class="btn ghost">Uložit</button></div>
+            <div id="customQuoteList" class="chip-cloud"></div>
+          </section>
+          <section class="panel glass">
+            <div class="panel-head"><h3>Identity rules</h3><span class="tag">my standards</span></div>
+            <div class="input-row"><input id="identityRuleInput" placeholder="Jsem člověk, který…"><button id="saveIdentityRuleBtn" class="btn primary">Přidat rule</button></div>
+            <div id="identityRules" class="list tall"></div>
+          </section>
+        </div>
+        <div class="grid two">
+          <section class="panel glass"><div class="panel-head"><h3>Discipline contracts</h3><span class="tag">anti-quit</span></div><div class="form-grid compact"><label>Název<input id="contractTitle" placeholder="Summer arc / race prep / cut"></label><label>Deadline<input id="contractDeadline" type="date"></label></div><textarea id="contractText" placeholder="Pravidla, minimum, co udělám i ve špatný den, reward…"></textarea><button id="saveContractBtn" class="btn primary">Uložit contract</button><div id="contractList" class="list tall"></div></section>
+          <section class="panel glass"><div class="panel-head"><h3>Bad day protocol</h3><span class="tag">fallback plan</span></div><div id="badDayProtocol" class="coach-list"></div></section>
+        </div>
+      </section>
+
+      <section id="athlete" class="view">
+        <div class="v8-hero glass">
+          <div><p class="eyebrow">complete athlete toolbox</p><h1>Athlete Toolkit <span>protocols · gear · skills</span></h1><p class="lead">Všechno co sportovec řeší kolem výkonu: warm-up, mobility, recovery, vybavení, suplementy, skills, taper a checklisty.</p></div>
+          <div class="toolkit-badge">OS</div>
+        </div>
+        <div class="grid two">
+          <section class="panel glass accent-panel"><div class="panel-head"><h3>Protocol generator</h3><span class="tag">situational</span></div><div class="form-grid compact"><label>Situace<select id="protocolType"><option>tight calves / shins</option><option>sore upper body</option><option>low sleep</option><option>rýma / cold easy mode</option><option>pre-race day</option><option>post-long-run</option><option>heavy leg day tomorrow</option></select></label><label>Délka min<input id="protocolMinutes" type="number" value="12"></label></div><button id="generateProtocolBtn" class="btn primary">Generate protocol</button><div id="protocolResult" class="routine-grid"></div></section>
+          <section class="panel glass"><div class="panel-head"><h3>Skill progression</h3><span class="tag">steps</span></div><div class="form-grid compact"><label>Skill<select id="skillSelect"><option>Clean muscle-up</option><option>50+ push-ups</option><option>10 km sub 60</option><option>1 km sub 3:30</option><option>Pull-up power</option><option>Running base</option></select></label><label>Úroveň<select id="skillLevel"><option>current</option><option>easy week</option><option>aggressive week</option></select></label></div><button id="generateSkillBtn" class="btn primary">Ukázat progresi</button><div id="skillResult" class="coach-list"></div></section>
+        </div>
+        <div class="grid two">
+          <section class="panel glass"><div class="panel-head"><h3>Gear / supplement inventory</h3><span class="tag">private</span></div><div class="form-grid compact"><label>Název<input id="gearName" placeholder="Velocity Nitro / kreatin / gely"></label><label>Množství<input id="gearQty" placeholder="1 pár / 300 g / 6 ks"></label><label>Kategorie<select id="gearCategory"><option>Running gear</option><option>Gym gear</option><option>Supplements</option><option>Recovery</option><option>Clothes</option><option>Other</option></select></label><label>Rebuy date<input id="gearRebuy" type="date"></label></div><textarea id="gearNotes" placeholder="poznámky, cena, kde koupit, stav…"></textarea><button id="saveGearBtn" class="btn primary">Uložit item</button><div id="gearList" class="list tall"></div></section>
+          <section class="panel glass"><div class="panel-head"><h3>Sport checklists</h3><span class="tag">templates</span></div><div id="sportChecklistTemplates" class="check-grid"></div></section>
+        </div>
+      </section>
+
+      <section id="plans" class="view">
+        <div class="v8-hero glass">
+          <div><p class="eyebrow">future paid version lab</p><h1>Plans & Monetization <span>free · pro · athlete</span></h1><p class="lead">Architektura pro budoucí placené verze. V appce je zatím simulace/plánování; reálný checkout patří přes Stripe + serverless/backend, ne přímo do statického HTML.</p></div>
+          <div class="version-badge"><span>future</span><strong>€</strong><small>paywall-ready</small></div>
+        </div>
+        <div class="grid three" id="planCards"></div>
+        <div class="grid two">
+          <section class="panel glass accent-panel"><div class="panel-head"><h3>Current local plan</h3><span class="tag">simulation</span></div><div class="form-grid compact"><label>Plan<select id="currentPlan"><option>Personal Free</option><option>Pro Athlete</option><option>Elite OS</option></select></label><label>Měsíční cena Kč<input id="planPrice" type="number" value="25"></label></div><button id="savePlanBtn" class="btn primary">Uložit plan config</button><div id="planFeatureMatrix" class="list"></div></section>
+          <section class="panel glass"><div class="panel-head"><h3>Stripe / paid rollout checklist</h3><span class="tag">hosting later</span></div><div id="stripeChecklist" class="coach-list"></div><button id="copyPricingBtn" class="btn ghost">Copy pricing plan</button></section>
+        </div>
+      </section>
+
       <section id="hosting" class="view">
         <div class="grid two">
           <section class="panel glass accent-panel"><div class="panel-head"><h3>Hosting readiness</h3><span class="tag">deploy checklist</span></div><div id="hostingChecklist" class="list"></div><div class="button-row wrap"><button id="runSelfTestBtn" class="btn primary">Spustit self-test</button><button id="copyDeployPlanBtn" class="btn ghost">Copy deploy plan</button></div><div id="selfTestResult" class="log-box"></div></section>
@@ -518,8 +629,8 @@
         <div class="version-hero glass">
           <div>
             <p class="eyebrow">release history · current build</p>
-            <h1>Training Arc OS <span>v7 Lucky</span></h1>
-            <p class="lead">Pomyslná verze zůstává v7. Tahle podstránka drží historii updatů, hosting checklist a quick changelog, ať víš, co je v appce už hotové.</p>
+            <h1>Training Arc OS <span>v8 Fire</span></h1>
+            <p class="lead">V8 Fire je aktuální mega build před hostingem/v10. Tahle podstránka drží historii updatů, hosting checklist a quick changelog, ať víš, co je v appce hotové.</p>
             <div class="button-row wrap">
               <button id="copyChangelogBtn" class="btn primary">Copy changelog</button>
               <button id="exportChangelogBtn" class="btn ghost">Export changelog .txt</button>
@@ -529,8 +640,8 @@
           </div>
           <div class="version-badge">
             <span>current</span>
-            <strong>v7</strong>
-            <small>Lucky Number · hosting-ready</small>
+            <strong>v8</strong>
+            <small>Fire · athlete-ready</small>
           </div>
         </div>
 
@@ -543,11 +654,11 @@
 
         <div class="grid two">
           <section class="panel glass accent-panel">
-            <div class="panel-head"><h3>Update timeline</h3><span class="tag">v1 → v7</span></div>
+            <div class="panel-head"><h3>Update timeline</h3><span class="tag">v1 → v8</span></div>
             <div id="versionTimeline" class="version-timeline"></div>
           </section>
           <section class="panel glass">
-            <div class="panel-head"><h3>v7 current patch notes</h3><span class="tag">no version bump</span></div>
+            <div class="panel-head"><h3>v8 current patch notes</h3><span class="tag">mega build</span></div>
             <div id="currentPatchNotes" class="coach-list"></div>
             <div class="glowline"></div>
             <p class="small muted">Poznámka: nutriční data v presetech jsou orientační. Etiketa / vlastní vážení má přednost. Security model je local-first encrypted vault + volitelný Supabase sync.</p>
@@ -555,7 +666,7 @@
         </div>
 
         <section class="panel glass">
-          <div class="panel-head"><h3>Hosting next steps</h3><span class="tag">after v7</span></div>
+          <div class="panel-head"><h3>Hosting next steps</h3><span class="tag">after v8</span></div>
           <div id="versionHostingSteps" class="version-step-grid"></div>
         </section>
       </section>

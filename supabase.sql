@@ -38,4 +38,4 @@ create index if not exists training_arc_vaults_updated_at_idx on public.training
 -- Optional: if you later add Supabase Storage food photos instead of storing compressed base64 in the vault:
 -- 1) Create a private bucket named training-arc-food-images
 -- 2) Add storage policies limiting object access to auth.uid() folders
--- Current v7 stores food images inside encrypted vault for simplicity.
+-- Current v8 stores food images inside encrypted vault for simplicity.
