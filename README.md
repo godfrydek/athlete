@@ -39,3 +39,13 @@ Open `index.html` in your browser. Create a vault passphrase and use the app off
 
 Nutrition presets are rough estimates. Food labels, weighing and your own custom entries win.
 This app is for personal tracking and planning, not medical diagnosis.
+
+## V10 hard refresh after deploy
+
+Pokud browser po deployi pořád ukazuje staré `v7/v8/v9`, je to skoro určitě stará PWA/service-worker cache. Otevři jednou appku s parametrem:
+
+```text
+https://tvoje-url.cz/athlete/?v10=force
+```
+
+Nebo v lock screenu klikni **Force V10 refresh**. Tento build má network-first HTML service worker a maže staré `training-arc-os-*` cache.

@@ -7,19 +7,20 @@
   <meta name="description" content="Training Arc OS v10 Historic — secure private all-in-one athlete, nutrition, recovery, planning and life OS." />
   <title>Training Arc OS v10 Historic</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="css/v9-ulti.css" />
-  <link rel="stylesheet" href="css/v10-historic.css" />
+  <link rel="stylesheet" href="style.css?v=10.0.2" />
+  <link rel="stylesheet" href="css/v9-ulti.css?v=10.0.2" />
+  <link rel="stylesheet" href="css/v10-historic.css?v=10.0.2" />
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script defer src="app.js"></script>
-  <script defer src="data/v9-foods.js"></script>
-  <script defer src="data/v9-recipes.js"></script>
-  <script defer src="js/v9-addon.js"></script>
-  <script defer src="data/v10-foods.js"></script>
-  <script defer src="data/v10-recipes.js"></script>
-  <script defer src="data/v10-exercises.js"></script>
-  <script defer src="data/v10-quotes.js"></script>
-  <script defer src="js/v10-addon.js"></script>
+  <script defer src="app.js?v=10.0.2"></script>
+  <script defer src="data/v9-foods.js?v=10.0.2"></script>
+  <script defer src="data/v9-recipes.js?v=10.0.2"></script>
+  <script defer src="js/v9-addon.js?v=10.0.2"></script>
+  <script defer src="data/v10-foods.js?v=10.0.2"></script>
+  <script defer src="data/v10-recipes.js?v=10.0.2"></script>
+  <script defer src="data/v10-exercises.js?v=10.0.2"></script>
+  <script defer src="data/v10-quotes.js?v=10.0.2"></script>
+  <script defer src="js/v10-addon.js?v=10.0.2"></script>
+  <script defer src="js/v10-visible-fix.js?v=10.0.2"></script>
 </head>
 <body>
   <div class="aurora aurora-a"></div>
@@ -50,6 +51,7 @@
           <button id="demoVaultBtn" class="btn ghost">Demo režim</button>
           <button id="offlineUnsafeBtn" class="btn ghost subtle">Dočasně bez vaultu</button>
           <button id="resetVaultBtn" class="btn danger ghost">Reset lokálu</button>
+          <button id="v10HardRefreshBtn" class="btn ghost subtle" title="Smaže starou PWA cache a znovu načte V10">Force V10 refresh</button>
         </div>
         <p class="small muted">Lokální data jsou šifrovaná AES-GCM. Cloud sync posílá šifrovaný vault; Supabase klíče nastavíš později v Connectionsu.</p>
       </article>

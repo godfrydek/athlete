@@ -23,8 +23,8 @@
   }
 
   function patchBranding(){
-    document.title='Training Arc OS v9 Ulti';
-    const meta=qs('meta[name="description"]'); if(meta) meta.content='Training Arc OS v9 Ulti — private athlete life operating system.';
+    document.title='Training Arc OS v10 Historic';
+    const meta=qs('meta[name="description"]'); if(meta) meta.content='Training Arc OS v10 Historic — private encrypted athlete life operating system.';
     qsa('.sidebar-top span').forEach(x=>x.textContent='v9 Ulti');
     qsa('.lock-card h1 span').forEach(x=>x.textContent='v9');
     const side=qs('.lock-side .eyebrow'); if(side) side.textContent='v9 ulti upgrade';
@@ -144,7 +144,7 @@
       if(has('currentPatchNotes')) qs('#currentPatchNotes').innerHTML=currentPatchNotes().map(x=>`<div class="coach-tip">${clean(x)}</div>`).join('');
       if(has('versionHostingSteps')){ const steps=[['1','GitHub repo','Nahraj V9 soubory do repa.'],['2','Vercel / Netlify','Deploy static appku s HTTPS.'],['3','Supabase','Spusť SQL, nastav Auth/RLS a vlož anon key.'],['4','Multi-device test','PC create vault → push → mobil pull.'],['5','V10 later','Po hostingu řešit serverless, Stripe/email/AI endpoint.']]; qs('#versionHostingSteps').innerHTML=steps.map(s=>`<div class="version-step"><strong>${s[0]}</strong><h4>${clean(s[1])}</h4><p>${clean(s[2])}</p></div>`).join(''); }
     };
-    window.changelogText=function(){ return 'Training Arc OS v9 Ulti — changelog\n\n' + versionHistory().map(r=>`${r.v} — ${r.title} [${r.tag}]\n`+r.items.map(x=>' - '+x).join('\n')).join('\n\n') + '\n\nCurrent V9 notes\n' + currentPatchNotes().map(x=>' - '+x).join('\n'); };
+    window.changelogText=function(){ return 'Training Arc OS v10 Historic — changelog\n\n' + versionHistory().map(r=>`${r.v} — ${r.title} [${r.tag}]\n`+r.items.map(x=>' - '+x).join('\n')).join('\n\n') + '\n\nCurrent V10 notes\n' + currentPatchNotes().map(x=>' - '+x).join('\n'); };
     window.exportChangelog=function(){ download('training_arc_os_v9_changelog.txt', window.changelogText(), 'text/plain'); };
   }
 
@@ -257,7 +257,7 @@
     const cur=qsa('.release-card.current'); cur.forEach(c=>c.classList.remove('current'));
     if(typeof renderVersionsPage==='function'){
       // original renderVersionsPage is called by core only if Versions is visible; this nudge fixes current tag after v9 override.
-      qsa('.release-card').forEach(card=>{ if(card.textContent.includes('v9 ·')) card.classList.add('current'); });
+      qsa('.release-card').forEach(card=>{ if(card.textContent.includes('v10 ·')) card.classList.add('current'); });
     }
   }
 
