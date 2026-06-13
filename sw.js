@@ -1,13 +1,16 @@
-const CACHE = 'training-arc-os-v4';
-const ASSETS = ['./', './index.html', './style.css', './app.js', './manifest.json'];
+const CACHE = 'training-arc-os-v5-cache-v1';
+const ASSETS = ['./','./index.html','./style.css','./app.js','./manifest.json'];
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).catch(() => null));
-  self.skipWaiting();
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(()=>self.skipWaiting()));
 });
 self.addEventListener('activate', event => {
-  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));
-  self.clients.claim();
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
 });
 self.addEventListener('fetch', event => {
-  event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request).catch(() => cached)));
+  if (event.request.method !== 'GET') return;
+  event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request).then(res => {
+    const clone = res.clone();
+    caches.open(CACHE).then(cache => cache.put(event.request, clone)).catch(()=>{});
+    return res;
+  }).catch(()=>cached)));
 });

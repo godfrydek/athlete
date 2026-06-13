@@ -1,107 +1,103 @@
-# Training Arc OS v4 ALL-IN-ONE
+# Training Arc OS v5 Supreme
 
-Private all-in-one tracker pro training arc: kalorie, custom jídla s obrázky, gym, běh, kalkulačky, deník, knihy, habits, chorey, grafy, AI-style tipy, secure vault, cloud sync a email reporty/backupy.
+Soukromá all-in-one web appka pro fitness + life tracking. Funguje jako obyčejný statický web: otevři `index.html`, nastav vault heslo a jedeš.
+
+## Co je ve v5 nové
+
+- Premium redesign: lepší dashboard, glass UI, Command palette, responsive mobile/tablet/PC layout.
+- Secure vault: WebCrypto AES-GCM + PBKDF2, lokální data nejsou v localStorage čitelná jako plain text.
+- Supabase cloud sync: login přes email/password a push/pull šifrovaného vaultu mezi mobilem, tabletem a PC.
+- 1000+ food presetů generovaných z kategorií jídel + variant. Ber jako orientační databázi, etiketa má vždy přednost.
+- Food calculator: údaje na 100 g → vlastní porce, custom food databáze, fotky jídel, meal builder.
+- Gym: presety podle tebe, weighted/explosive kliky, pull-ups, dips, rows, legs, import z Lyfto/CSV/JSON/TXT.
+- Běh: typy běhů, run log, weekly km, PR estimates, pace.
+- Kalkulačky: e1RM/RIR, VO2max estimate, BMI/TDEE, pace/race predictor, makra, long-run fuel.
+- Life OS: deník, mood, habits/streak, chorey/tasky, knihy/reading arc.
+- Email/webhook reports: daily report přes mailto, webhook backup/report, encrypted vault export.
+- PWA základ: `manifest.json` + `sw.js`.
 
 ## Rychlé spuštění
 
 1. Rozbal ZIP.
 2. Otevři `index.html` v prohlížeči.
-3. Nastav vault PIN/heslo.
-4. Začni zapisovat data.
+3. Nastav vault heslo / PIN. Doporučení: raději věta než 4 čísla.
+4. Začni logovat.
 
-Appka je local-first: bez serveru, bez registrace, bez předplatného. Pro sync mezi mobilem/tabletem/PC použij Supabase sekci v appce.
+Pro mobil/tablet/PC sync je nejlepší to hodit na GitHub Pages, Netlify nebo Vercel a nastavit Supabase níže.
 
-## Nové ve v4
+## Supabase cloud sync
 
-### Food databáze + obrázky
-- mnohem víc základních food presetů: kuře, rýže, skyr, tvaroh, vejce, vločky, ovoce, zelenina, oleje, snacky, běžecký gel, recovery shake atd.
-- kalkulátor: kcal/makra na 100 g → tvoje gramáž → porce
-- custom jídla s tagy, emoji ikonou a obrázkem
-- možnost vyplnit uložené jídlo zpět do kalkulátoru
-- rychlé přidání jídla do dne
-
-Poznámka: obrázky se ukládají do šifrovaného vaultu. Dávej radši menší fotky, protože velké obrázky zvětšují backup i cloud sync.
-
-### Gym upgrade
-- rozšířené presety cviků: kliky, weighted push-ups +10/+20 kg, explosive push-ups, dips, pull-ups, muscle-up technique, incline bench, MAG pulldown, V-bar row, delts, arms, legs, core atd.
-- vlastní custom cvik/preset přímo z appky
-- import workout historie z CSV/JSON/TXT: appka zkusí najít názvy cviků a přidat je jako presety
-- PR/e1RM board + next-lift tipy
-
-Když mi nahraješ export z Lyftu sem do chatu, můžu podle skutečného formátu doladit parser a doplnit ti přesné presety podle historie.
-
-### Běh upgrade
-- typy běhů: Easy/Zone 2, Recovery jog, Steady, Tempo, Threshold intervals, VO2max intervals, 900 easy + 100 sprint, Strides, Long run, Progression, Fartlek, Hills, Race/Time trial, Treadmill incline, Brick/gym+run
-- auto pace
-- weekly km target
-- PR pro 1 km / 5 km / 6 km podle logů
-
-### Email reporty / backup
-Statický HTML soubor nemůže sám odesílat email bez externí služby. Ve v4 jsou proto tři režimy:
-
-1. **Mailto fallback** – otevře email klienta s hotovým daily reportem, ručně odešleš.
-2. **Webhook/Formspree** – vložíš endpoint a appka pošle daily report přes POST request.
-3. **Encrypted vault webhook** – pošle šifrovaný vault jako backup. Bez vault hesla/PINu nejde přečíst.
-
-Pro automatické emaily je nejlepší použít Formspree, Make/Zapier webhook, nebo Supabase Edge Function napojenou na email provider. Nejdůležitější pravidlo: nikdy neposílej plaintext data, pokud nechceš. Vault backup je encrypted.
-
-### Secure + cloud
-- lokální data jsou šifrovaná přes WebCrypto AES-GCM
-- klíč se odvozuje z vault hesla přes PBKDF2
-- export/import backupu
-- Supabase sync pro mobil/tablet/PC
-- do cloudu se posílá jen zašifrovaný vault
-
-## Multi-device sync přes Supabase
-
-Toto je volitelné. Bez Supabase appka funguje lokálně.
+V5 ukládá do cloudu jen šifrovaný vault. Supabase neuvidí tvoje jídla, deník ani tréninky v plain textu, pokud je sám nevyexportuješ jako plain JSON.
 
 ### 1. Vytvoř Supabase projekt
 
-V Supabase vytvoř nový projekt. V nastavení projektu najdi:
-- Project URL
-- anon public key
+- V Supabase vytvoř nový projekt.
+- Zapni Auth → Email provider.
+- Vezmi Project URL a anon/publishable key.
 
-Tyto hodnoty vlož v appce do `Sync & secure`.
+### 2. Spusť SQL
 
-### 2. V Supabase spusť SQL
+V Supabase SQL editoru spusť obsah souboru `supabase.sql`.
 
-V SQL editoru spusť obsah souboru `supabase.sql`.
+Tabulka:
 
-### 3. Přihlášení na zařízeních
+```sql
+public.training_arc_vaults
+```
 
-Na PC:
-1. otevři appku
-2. odemkni vault
-3. vlož Supabase URL + anon key
-4. sign up / sign in
-5. klikni `Push vault`
+RLS policies dovolí číst/zapisovat jen řádek, kde `auth.uid() = user_id`.
 
-Na mobilu/tabletu:
-1. otevři stejnou appku
-2. vlož Supabase URL + anon key
-3. sign in stejným e-mailem
-4. klikni `Pull vault`
-5. znovu odemkni stejným vault heslem/PINem
+### 3. Nastav v appce
 
-## Import z Lyftu / workout historie
+V appce otevři **Connection Hub**:
 
-V appce otevři `Gym` → `Lyftu / workout historie import`.
+- vlož Supabase URL
+- vlož anon/publishable key
+- zadej email + cloud password
+- Sign up / Sign in
+- Push vault
 
-Podporované pokusy:
-- CSV
-- TSV
-- JSON
-- TXT
+Na druhém zařízení:
 
-Parser hledá sloupce / klíče jako `exercise`, `cvik`, `name`, `title`, `movement`. Když export bude mít jiný formát, pošli mi ho a upravím parser přesně pro něj.
+- otevři hosted appku
+- vytvoř/odemkni vault stejným vault heslem
+- Sign in
+- Pull vault
 
-## Hosting jako appka
+## Security poznámky
 
-Pro PWA instalaci na mobil je nejlepší to hodit na:
-- GitHub Pages
-- Netlify
-- Vercel
-- vlastní hosting
+- Vault heslo je klíč k dešifrování. Když ho zapomeneš, data nejdou obnovit.
+- Pro cloud nepoužívej service_role key v prohlížeči. Používej jen anon/publishable key a RLS.
+- Plain export používej jen pro debug, ne jako běžný backup.
+- Email backup raději posílej encrypted vault, ne plain JSON.
+- Obrázky jídel se komprimují a ukládají do vaultu jako base64; hodně fotek zvětší localStorage/cloud payload.
 
-Pak půjde stránka připnout na plochu jako normální appka.
+## Email/webhook
+
+Bez backendu nejde přímo a bezpečně posílat email z čistého HTML. V5 proto nabízí:
+
+- `mailto:` daily report — otevře email klienta s hotovým textem.
+- Webhook URL — použij Formspree, Make, n8n, Zapier nebo vlastní endpoint.
+- Encrypted vault webhook — pošle JSON se šifrovaným vaultem.
+
+## Import Lyfto/workout historie
+
+V sekci Gym nahraj CSV/JSON/TXT/TSV. Appka zkusí vytáhnout názvy cviků a přidat je do presetů.
+
+Pro nejlepší presety mi klidně pošli export sem do chatu a já ti vytvořím přesnější `exercisePresets` podle reálné historie.
+
+## Limitace v5
+
+- Food presety jsou orientační, ne certifikovaná databáze potravin.
+- Cloud konflikty zatím řeší ručně přes Push/Pull, ne automatický merge.
+- AI coach je pravidlový, ne skutečný online AI model.
+- Supabase CDN musí být dostupné pro cloud funkce. Offline appka bez cloudu funguje dál.
+
+## Doporučený další v6 směr
+
+- Full hosted deployment na Vercel/Netlify.
+- Automatický conflict-safe sync.
+- Supabase Storage pro fotky jídel.
+- Reálná AI přes serverless endpoint.
+- OCR etikety jídla z fotky.
+- Strava/Google Fit import, pokud se rozhodneš pro API napojení.
